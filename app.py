@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import urllib.parse
 
 # Configuração da página para aproveitar toda a largura da tela
 st.set_page_config(page_title="Dashboard EP - Bauru", layout="wide", initial_sidebar_state="expanded")
@@ -117,6 +118,43 @@ try:
         # Tabela Bruta (Expansível)
         with st.expander("🔍 Ver todos os detalhes dos profissionais filtrados"):
             st.write(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']])
+
+        # --- BLOCO 4: GERADOR DE INFORME PARA WHATSAPP ---
+        st.markdown("---")
+        st.subheader("📱 Informe para WhatsApp")
+        st.markdown("Revise o resumo automático das atividades filtradas e compartilhe com as equipes.")
+
+        # Montando as variáveis do texto
+        unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
+        meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
+        total_horas = f"{df_f['CH_CALCULADA'].sum():.1f}"
+        total_capacitacoes = len(df_f)
+
+        # Escrevendo a mensagem formatada para o WhatsApp
+        mensagem = f"🏥 *Informe de Educação Permanente*\n"
+        mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
+        mensagem += f"📅 *Referência:* {meses_texto}\n\n"
+        mensagem += f"✅ *Atividades Registradas:* {total_capacitacoes}\n"
+        mensagem += f"⏳ *Carga Horária Total:* {total_horas}h\n\n"
+
+        # Pegando os 3 tipos de atividades mais frequentes (se a coluna existir)
+        if 'TIPO DE ATIVIDADE REALIZADA' in df_f.columns:
+            temas_comuns = df_f['TIPO DE ATIVIDADE REALIZADA'].value_counts().head(3).index.tolist()
+            if temas_comuns:
+                mensagem += f"📌 *Principais Focos Trabalhados:*\n"
+                for tema in temas_comuns:
+                    mensagem += f"- {tema}\n"
+
+        mensagem += f"\nParabéns a todos pelo excelente engajamento e vamos juntos planejar os próximos passos! 💪"
+
+        # Caixa de texto para edição
+        texto_editavel = st.text_area("Edite a mensagem abaixo se necessário antes de enviar:", value=mensagem, height=250)
+
+        # Botão/link direto para o WhatsApp
+        texto_formatado_url = urllib.parse.quote(texto_editavel)
+        link_wpp = f"https://api.whatsapp.com/send?text={texto_formatado_url}"
+
+        st.link_button("📲 Abrir e Enviar no WhatsApp", link_wpp, type="primary")
 
 except Exception as e:
     st.error(f"Erro ao processar dados: {e}")

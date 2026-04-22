@@ -17,7 +17,7 @@ def carregar_dados(url):
 
 # Cabeçalho do Dashboard
 st.title("📊 Painel de Indicadores - Educação Permanente")
-st.markdown("Análise visual de engajamento e carga horária da rede municipal.")
+st.markdown("Análise visual de engajamento e carga horária da ESF.")
 
 # Botão de atualização
 if st.sidebar.button("🔄 Atualizar Base de Dados"):

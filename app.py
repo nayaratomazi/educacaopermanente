@@ -6,7 +6,7 @@ from collections import Counter
 import re
 
 # Configuração da página
-st.set_page_config(page_title="Gestão EP - Bauru", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Educação Permanente - ESF", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
 # 1. LISTA MESTRA DE COLABORADORES (379 NOMES)
@@ -162,7 +162,7 @@ def extrair_temas_inteligentes(textos):
 
 # Interface Principal
 st.title("Painel de Gestão | Educação Permanente")
-st.caption("Atenção Primária à Saúde - Monitoramento Estratégico")
+st.caption("Acompanhamento atividades educativas")
 st.divider()
 
 # Sidebar
@@ -252,10 +252,10 @@ try:
         st.divider()
 
         # --- ÁREA DA COORDENAÇÃO ---
-        st.header("Coordenação | Business Intelligence")
+        st.header("Coordenação")
         with st.expander("Autenticação Necessária"):
             senha = st.text_input("Senha de acesso", type="password", key="sec")
-            if senha == "bauru2024":
+            if senha == "eps2026_esf":
                 
                 # 1. Deltas de Tendência
                 st.subheader("Tendência Mensal")

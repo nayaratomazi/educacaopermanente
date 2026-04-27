@@ -298,7 +298,7 @@ try:
                     st.subheader("Ranking Individual")
                     st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
                 with c_gest2:
-                    st.subheader("Busca Ativa (Zero Horas)")
+                    st.subheader("Colaborar sem nenhuma atividade lançada")
                     df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
                     faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(df_f['NOME COMPLETO'].unique())]
                     st.dataframe(faltantes, hide_index=True)

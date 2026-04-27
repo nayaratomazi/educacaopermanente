@@ -162,7 +162,7 @@ def extrair_temas_inteligentes(textos):
 
 # Interface Principal
 st.title("Painel de Gestão | Educação Permanente")
-st.caption("Acompanhamento atividades educativas")
+st.caption("Acompanhamento de atividades educativas")
 st.divider()
 
 # Sidebar

@@ -2,8 +2,142 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# Configuração da página para aproveitar toda a largura da tela
+# Configuração da página
 st.set_page_config(page_title="Dashboard EP - Bauru", layout="wide", initial_sidebar_state="expanded")
+
+# ==========================================
+# 1. LISTA MESTRA DE COLABORADORES DA REDE
+# ==========================================
+LISTA_MESTRA_NOMES = [
+    "ADRIANA CRISTINA DOS SANTOS", "ADRIANA SANTOS DE ARAUJO", "ADRIEL LUCAS COSTA CUNHA", 
+    "AIELLY CRISTINA DOS SANTOS COU", "AKIMI ADACHI", "ALESSANDRA REGINA DA SILVA", 
+    "ALESSANDRA TEIXEIRA AFFONSO", "ALEXSANDRA AFFONSO", "ALINE APARECIDA DE SOUZA", 
+    "ALINE ERIKA FERREIRA DE LIMA", "AMANDA GABRIELA DOS SANTOS CONSTANTINO", 
+    "AMANDA RODRIGUES ALVES NUNES", "AMANDRA GONCALVES CRIPPA", "ANA BEATRIZ CORPASSI", 
+    "ANA CAROLINA CONDI DA MATA", "ANA CAROLINA DA SILVA", "ANA CAROLINA FERRAZ PANUCCI", 
+    "ANA CAROLINA LOPES MATSUMOTO", "ANA CECILIA DE CAMPOS GALICIA", "ANA CRISTINA DE CAMPOS", 
+    "ANA GABRIELA LEITE CAMPOS", "ANA JULIA CAMARGO DOS SANTOS", "ANA LAURA ALMERIN TRABUCO", 
+    "ANA LUCIA CUSTODIO LEME", "ANA LUCIA RAIMUNDO", "ANA NERY MUNUERA NOGUEIRA", 
+    "ANA PATRICIA VIEIRA", "ANA PAULA ALVES DOS SANTOS", "ANA PAULA BAPTISTA SALERNO", 
+    "ANA PAULA DE MATOS MILESKI", "ANA PAULA SANTANA DOS REIS", "ANA PAULA VIOTTO", 
+    "ANA RAFAELA MORENO DUTRA", "ANDERSON MICHEL DOS REIS", "ANDRE VINICIUS RIBEIRO", 
+    "ANDRESSA APARECIDA PEREIRA GOES PESUTO", "ANDRESSA SOARES JOBSTRAIBIZER", 
+    "ANDREZA RODRIGUES SUPRIANO", "ANGELITA GOMES BORGES GONÇALVES", "ANNA LUIZA AMARANTE DA SILVA", 
+    "ANTONIA KAUANE AMARANTE MORAIS", "APARECIDA KINUIO HIRATA HUKUCHIMA", "ARIANE KEVLIN RODRIGUES", 
+    "ARIANE VARGAS DA SILVA", "BARBARA ARRABAL BARROS FERREIRA", "BARBARA BIANCHI DIAS", 
+    "BARBARA DE FATIMA RODRIGUES", "BARBARA LETICIA CHINALLI FERNANDES SANTOS", "BARBARA RAMOS MARQUES", 
+    "BEATRIZ BARRETO DE OLIVEIRA", "BEATRIZ FERREIRA BORGES", "BEATRIZ NAVARRO SANCHES", 
+    "BEATRIZ PEREIRA CAMPOS", "BEATRIZ SILVEIRA SILVERIO", "BIANCA DOS SANTOS CAETANO", 
+    "BRENA PAMELA EGLESIAS FRANCO", "BRUNA CRISTINA GOMES CAMPOS BENTO", "BRUNA FERNANDA DOS SANTOS", 
+    "BRUNA LACERDA DA SILVA", "BRUNA SILVERIO FORTUNATO", "BRUNA VICENTINI SIQUEIRA CRUZ", 
+    "BRUNO DE SOUZA MAZZUIA", "CAIO FARIA DE MORAES", "CARLA CRISTINA GONCALO", 
+    "CARLA MARIA PEREIRA DA SILVA", "CARMEN LUCIA ZUQUIERI", "CAROLINA CRISTINA BERGAMASCHI DA SILVA", 
+    "CATARINA AGUIAR FERREIRA LIMA", "CELESTE LUZIA CHRISOSTOMO DOS SANTOS", "CELIA APARECIDA CAMARGO LOPES", 
+    "CELIA MARIA FRANCISCO DA SILVA", "CHARLES VINICIUS ALVES VASQUE", "CLAUDIA DE QUEIROZ MARTINS RABAQUINI", 
+    "CLAUDIA FERNANDES NOGUEIRA", "CLEBER ROGERIO ESTRUQUE", "CRISTIANE DE CASSIA SOARES BRAZ", 
+    "CRISTIANE PEREIRA REINALDO", "CRISTILAYNE MATIAS DE LIMA", "DAIZE MANOEL DOS SONTOS", 
+    "DAMARIS VASCONI DA SILVA", "DANIEL APARECIDO MARASSATTI", "DANIEL AUGUSTO ADAMI", 
+    "DANIELI DA SILVA RAMOS", "DANIELLE GOMES DUARTE", "DAPHYNE YACHEL CHAVES", 
+    "DAVID LEE BARBOSA MANTOVANI", "DAVYD AUGUSTO CASTELLI DE SOUZA", "DAYANE FERNANDA LIMA DA SILVA", 
+    "DAYANE RAFAELA FARIAS FERREIRA TOMAZ", "DEBORA ALESSANDRA PERGER RODRIGUES", 
+    "DEBORA APARECIDA PACCOLA REZENDE", "DEBORA LONGO MIYASHITA", "DEBORAH EVELYN CANDIDO ZANOTT", 
+    "DEBORAH TORREZAN MARQUES", "DENIA CELESTINA ARAUJO SOUZA", "DEVLYN PICOLOTO SHIL", 
+    "DJEINE GONÇALVES DOS SANTOS", "DJULIEL GLEYCSON DA SILVA", "DOUGLAS ARAUJO PEDROLONGO", 
+    "DRIELLE LUCIA BASTOS DA SILVA", "EDSON ALVES DE PORTUGAL", "EDSON MURILO DE OLIVEIRA", 
+    "ELAINE APARECIDA DE SOUZA", "ELAINE CRISTINA FIRMINO", "ELAINE DO CARMO ROCHA", 
+    "ELEN CRIS FRANCO DUARTE", "ELIANA PATRICIA PINTO FERNANDES", "ELIANE MARQUES FERREIRA", 
+    "ELIDA ESTEFANIA ALVES TOMAZ", "ELISANGELA APARECIDA LOPES", "ELIZABETH DA SILVA LEMES", 
+    "ELLEN APARECIDA COSTA", "EMANUELLI GIGLIOLI OLIVATTO", "EMYLLY YARA TEODORO DOS SANTOS", 
+    "ERICA CRISTINA MACHADO DA", "ERICA RODRIGUES CAETANO PEROTA", "EVERTON APARECIDO GARCIA LEAL", 
+    "FABIANA JORGE DA SILVA", "FABIANA PRADO DA SILVA", "FABIANO AZEVEDO SERAFIM", 
+    "FABIOLA GOMES DOS SANTOS", "FATIMA APARECIDA DE ASSIS", "FERNANDA CRISTINA TERECIANO", 
+    "FERNANDA DE SOUZA FERREIRA", "FERNANDA MARQUES YUI", "FERNANDA PARINI NUNES", 
+    "FERNANDA SAN JULIANO PEREIRA PAULON", "FILIPE SAN JULIANO PEREIRA", "FLAVIO LIBOIO", 
+    "FRANCIELEN DA SILVA RIBEIRO", "FRANCINE APARECIDA K FRANCEZ", "FRANCINE AROTEIA CAPONE", 
+    "FRANCINE RODRIGUES DO NASCIMENTO", "FRANKLIN ABNER DE LIMA SANTOS", "GABRIEL BARBOSA SACCARDO", 
+    "GABRIEL FERNANDO ROSA ALDIGUERES", "GABRIEL HELENO LUIS", "GABRIELA BENJAMIN TOGASHI", 
+    "GABRIELA BERNARDINO MARTINS", "GABRIELA CRISTINA SCHWETER ALBANEZ", "GABRIELA GARCIA", 
+    "GABRIELA KRONKA BARBOZA", "GABRIELLY TEOFILO RAMOS MENEGHELLO", "GEOVANA FERREIRA BRANDAO", 
+    "GILSIANDRA DA SILVA CAETANO", "GIORDANA DE FREITAS COLACINO MENDES", "GIOVANA ALQUATI DE ALMEIDA", 
+    "GIOVANA GONÇALVES COSTA ARAUJO", "GIOVANA GONÇALVES DA SILVA", "GIOVANA RENATA RECUCHE", 
+    "GIOVANA SASSO JONAS", "GIOVANNA GALASSO PANNUNZIO", "GISELE ALVES DE MIRA SOUZA", 
+    "GISELE ASSIS RIBEIRO TAVARES", "GISELE HERNANDES GONCALVES", "GISELE LIPE BAUTZ", 
+    "GISLAINE CRISTINA GUIMARÃES JA", "GIULIA AGUIAR CAMARGO", "GIULIA NARCIZO GARCIA", 
+    "GIZELE ARAUJO VALADAO GOMES", "GLAUCIA APARECIDA DE JESUS COLOMBO VIEIRA", 
+    "GUILHERME FERNANDO MACIEL PRUDENTE", "GUSTAVO NARDI NOGUEIRA", "IEDA PAPILLE DOS SANTOS", 
+    "ISABEL CRISTINA FRANÇA DE OLIVEIRA DA SILVA", "ISABELA APARECIDA RODRIGUES DA CRUZ JERONIMO", 
+    "ISABELA CHAVES DE OLIVEIRA", "ISABELA CRISTINA FLORENTINO", "ISABELA DE OLIVEIRA ALVES", 
+    "ISABELA INACIO DE CASTRO", "ISABELA MORENO AYRES", "ISABELA POSSIGNOLLO DA SILVA", 
+    "ISRAEL MESSIAS GUARDIA", "IVAN VARAS CARDOSO", "IVANA FERREIRA DO NASCIMENTO", 
+    "IVY CAROLINA CORREA SANTIAGO S", "IZABELA FERREIRA DE CASTRO BATISTA", "JAMILLE ALESSANDRA LEITE", 
+    "JANAINA DE CARVALHO QUEIROGA", "JANETE VICTOR MANGA", "JAQUELINE PEREIRA DE SOUZA", 
+    "JEAN CARLO PEREIRA DOS SANTOS", "JESSICA ARIELE GUIMARAES CORTE", "JESSICA CARVALHO DE SOUZA", 
+    "JESSICA CRISTINE LEITE", "JESSICA ELLEN LINDOLPHO CREMON", "JESSICA FARIA BARBOSA", 
+    "JESSICA WATANABE CONCEICAO", "JHENIFER VITÓRIA DA SILVA MARTINS", "JOAO GABRIEL DA SILVA FREITAS", 
+    "JOÃO PEDRO PONCE LOPES", "JOAO VITOR RINALDO DE SOUSA", "JOICE CASTELLI PATROCINIO", 
+    "JOSE CARLOS SALVADOR", "JOSELAINE REGIANI RAMOS", "JOSIANE CRISTINA GOMES SEBASTIÃO", 
+    "JOSIANE REGO", "JOSIANE SOARES DE SOUZA SANTOS", "JUCILENE MARIA COSTA", "JUCINEIA DOS SANTOS", 
+    "JULIA FICHIO MIYAHARA", "JULIA SANCHES DE SOUZA", "JULIA SILVA PEREIRA", "JULIA TELLES PASCON", 
+    "JULIANA APARECIDA SCANTIMBURGO MANSO", "JULIANA DA SILVA BUENO", "JULIANA DE FATIMA RIBEIRO", 
+    "JULIANA DE OLIVEIRA JUMONJI", "JULIANA MOREIRA LOPES", "JULIANA ORTIZ DA SILVA", 
+    "JULIANE MACEGOZA DO AMARAL", "JULIANE PANDOLFI BUENO DE SOUZA ANTONIO", "JULIO CESAR TAVARES", 
+    "KARINA MONTEIRO BATISTA", "KARLA RAISSA BELINI BALDONI", "KATHLEEN RUFINO DA SILVA", 
+    "KEDMA CASTILHO DE LIMA LUNA", "KESLEY GARCIA IVASSAKI", "KETURI GABRIELA ALVES DA SILVA", 
+    "LARA GARCIA DE OLIVEIRA", "LARISSA PEREIRA GONCALVES", "LEANDRO ACACIO DOS SANTOS", 
+    "LEANDRO DAVANÇO FREIRE", "LEILANE SIQUEIRA DE GOIS MATHEUS", "LEONARDO AMARAL DE PAULA DA SILVA", 
+    "LEONARDO HORNE GOMES", "LEONARDO PEREIRA GOMES", "LEONARDO RICARDO DA SILVA", 
+    "LETICIA ALVES FERREIRA", "LETICIA BONAFIM PELLOSO FURTADO", "LETICIA DA SILVA REDECOPA", 
+    "LETICIA RUZZON CONEGLIAN", "LIDIANE HELOISA JODAR", "LIGIA MARIA FERREIRA DO CARMO", 
+    "LISANDRA DA SILVA RODRIGUES", "LIVIA MOZARDO CASTIGLIOLI", "ANA KARINA BENEDITO PEREIRA", 
+    "LORRAYNE FARIAS DOS SANTOS", "LUCIANA ALVES DOS SANTOS", "LUCIANA APARECIDA DA SILVA", 
+    "LUCIANA APARECIDA VICENTINI CA", "LUCIANE CRISTINA MAIA DE OLIVEIRA", "LUCIMAR DOS SANTOS CAETANO", 
+    "LUCIMARA CARVALHO DE BRITO", "LUIDGI AGNNO ZELNYS CARLOS", "LUIS FELIPE LIZI JORGE", 
+    "MAIARA APARECIDA FRANCO DA SILVEIRA", "MAILON LESSA", "MARCELLA CARDOSO GONÇALVES", 
+    "MARCELLA MONTOVANELLI MENECHELLI", "MARCELLY CRISTHINE DA SILVA", "MARCELO ANDRADE FERREIRA", 
+    "MARCELO JORGE GOMES", "MARIA APARECIDA MARTINS ROSA", "MARIA CAROLINA URSULINO BURATTO FRANCO", 
+    "MARIA FERNANDA FRANCISCA PAULA", "MARIA ISABEL DA COSTA", "MARIA LYANDRA CARVALHO", 
+    "MARIANA BERTUCCO BAZAN", "MARIANA MAGRO REINATO", "MARIANA PERES FATORI", "MARIANE ALVES JATOBA", 
+    "MARISA CRISTINA PRUDENTE RIBEIRO", "MARIUZA GONCALVES VIEIRA", "MARLI GONÇALVES CARNIATO", 
+    "MATHEUS CAMARGO MARCIANO", "MATHEUS SILVA ANTONIO", "MAYARA ANDRESSA BRUNA DOS SANTOS", 
+    "MAYARA GODOY PANUNTO", "MAYARA MONTOVANI DE OLIVEIRA", "MAYRA DINIZ WASHINGTON", 
+    "MELINA RODRIGUES", "MILENA NORONHA MUNHOZ", "MIQUE ERIC GIMENES", "MIRIAM CHRISTINELLI", 
+    "MIRIAN HELEN CARNEIRO DE SOUZA", "MIRYELLI CAROLINE MACIEL", "NATALIA ALVES TOSTA OCANHA", 
+    "NATALIA CAVALHERI DE SOUZA GUERRERO", "NATALIA CRISTINA DOS SANTOS", "NATALIA FIDENCIO NASCIMENTO", 
+    "NATHALIA APAREC B.SOUZA", "NATHALIA DO CARMO LEME INACIO", 
+    "NATHALIA GONÇALVES COSTA CASAGRANDE BERNARDO", "NATHALY MARTINUCCI", 
+    "NAYANE MARIA DE MELO ALEXANDRINO", "NAYARA COLEONE MUSTACIO ZANELI", "NAYARA SOBRINHO LEITE", 
+    "NAYARA TOMAZI BATISTA", "NELI DE FATIMA DANIEL SANTOS", "NEYLA IVETTE YUTRONIC SERRANO", 
+    "NEYLOR JOSE ANTUNES DOS SANTOS", "NIELY RAÍSSA LIMA GUIMARÃES", "PAMELA CRISTINA KURIO", 
+    "PAMELA LARISSA FRANCO DA CRUZ ALVES", "PAMELLA THAYARA DOS SANTOS", 
+    "PATRICIA ALINE RODRIGUES DE SOUZA", "PATRICIA LIZANDRA MORETTI CRUZ", "PATRICIA MIRELI SILVA", 
+    "PAULO HENRIQUE MANGILI SERESUELA", "PAULO RICARDO SOLANA", "POLLIANY DO MONTE LANCA", 
+    "PRISCILA CALIGARIS CAGI", "PRISCILA DOS SANTOS TRINDADE", "RAFAELA FERNANDA RODRIGUES FAUSTINO", 
+    "RAFAELA LOPES ALVES", "RAI SAIKA PINTON", "RAPHAELA GIOVANA ALVES CALVO", 
+    "RAQUEL PEREIRA DA CONCEICAO", "RAQUEL PEREIRA DA SILVA", "RAYANE ISABELLE TURKOCIO FERRAREZI", 
+    "REGINALDO CAETANO", "RENATA DE PAULA SOARES", "RENATA DI PAULA COSTA", "RICARDO QUIRINO FONSECA", 
+    "RICARDO RUIVO BUSCH", "RICHELE BOICO DE SOUZA BARBOSA", "ROBSON LUIZ PEREIRA", 
+    "RODRIGO SANTOS SANTANA", "ROSIELI DE CARVALHO", "ROSIMEIRE APARECIDA GARCIA DA SILVA OLIVEIRA", 
+    "SABRINA ALBANEZ OLIVIER", "SAMARA MOREIRA INACIO", "SANDRA CRISTINA DIAS CAMARGO MARTINS", 
+    "SARA LEONCIO DE MELO GARCIA", "SELMA MARIA DA SILVA", "SHIRLEI APARECIDA PRONUNCIATE GUIMARÃES", 
+    "SILVANA APARECIDA STEKER PACHECO", "SILVIA APARECIDA DE SOUZA SANTANA DO NASCIMENTO", 
+    "SILVIA HELENA FERNANDES", "SILVIA REGINA CELESTINO", "SILVIA SAYURI YATSU TAHARA", 
+    "SIMONE MONTEIRO DA SILVA LOPES", "SIMONE REGINA FARINHA", "SOLANGE CASTILHO", "SOLANGE ESGOTI", 
+    "SONIA APARECIDA FAGNANI", "SUELLEN SIMONE GONZALES BERRO", "SUSAN NAWALY GONCALVES SANDOLI", 
+    "TAIENE DA SILVA MORETTO", "TAIS DIAS CESARIO", "TALITA CRISTINA DA SILVA RIBEIRO", 
+    "TANIA REINALDO MARINS", "TATIANE BAZOTTI COSTA", "TAYOANA CAROLINA SILVA", 
+    "THAINA OLIVEIRA FELICIO OLIVATTI", "THAIS CARDOSO DA SILVA SILVIERO", "THAIS CRISTINA ALVES PINTO", 
+    "THAIS NAYRA MACHADO", "THAIS OTAVIANA PEREIRA PARDINO", "THAISE MARTINS SANTOS SANTANA", 
+    "THALIA MOREIRA MANZUTI GARCIA", "THATIANE FRANCINI DA SILVA FERREIRA", 
+    "THIAGO HENRIQUE CHANQUINI FRANCISCO", "TIAGO PEREIRA ALEXANDRE", "TIENE ARCANJO DE OLIVEIRA", 
+    "TIFANY DA SILVA TORRES", "VALDINEIA NERIS DE SOUSA", "VALERIA DE MIRANDA", 
+    "VANESSA DOMINGOS BARBOSA", "VANESSA FRACALOSSI", "VANUZA BARBOSA LEITE", 
+    "VERA LUCIA ALVES DA SILVA", "VICTOR FERREIRA RAMOS COLASSO", 
+    "VITÓRIA GABRIELLE RODRIGUES DOS SANTOS", "VIVIAN MARTINS GOMES", "VIVIANI MAXIMINO BAPTISTA BUENO", 
+    "VYVIAN KELLEY ALVES CASTILHO", "WANESSA VIEIRA CASTELO RODRIGUES", "WENDLER VINICIUS DA PAIXAO", 
+    "WESLEY DOS SANTOS CASTILHO RODRIGUES", "WILLIAM AUGUSTO GRANDO", "YASMIM VITORIA DA SILVA SOUZA", 
+    "YURI HOLLANDER", "ZENAIDE BARBOSA HONORATO", "THALES CABRAL BENINI FELISBERTO", 
+    "MARIA FERNANDA LOSSILA", "ELIZABETH CRISTINA BATISTA", "REGINA APARECIDA DE FREITAS DOS SANTOS"
+]
 
 # ==========================================
 # CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
@@ -15,11 +149,10 @@ def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
 
-# Cabeçalho do Dashboard
+# Cabeçalho
 st.title("📊 Painel de Indicadores - Educação Permanente")
-st.markdown("Análise visual de engajamento e carga horária da ESF.")
+st.markdown("Gestão de engajamento e monitoramento de carga horária da ESF.")
 
-# Botão de atualização
 if st.sidebar.button("🔄 Atualizar Base de Dados"):
     st.cache_data.clear()
     st.rerun()
@@ -31,48 +164,46 @@ try:
     # --- PROCESSAMENTO DOS DADOS ---
     df.columns = df.columns.str.strip().str.upper()
     
-    # 1. UNIFICAÇÃO INTELIGENTE DE COLUNAS DE NOME
-    # Procuramos todas as colunas que contenham "NOME" e "COMPLETO"
+    # Unificação inteligente de colunas de nome (mantendo o histórico)
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
-        # Mesclamos as colunas: onde a primeira estiver vazia, pegamos o dado da segunda
-        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0]
+        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
     
-    # Identificação das colunas de tempo
+    # Identificação das colunas de tempo e data
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
 
-    # 2. Tratamento de Horas e Carga Horária
+    # Tratamento de Horas e Datas
     inicio_dt = pd.to_datetime(df[col_inicio].astype(str), errors='coerce')
     fim_dt = pd.to_datetime(df[col_fim].astype(str), errors='coerce')
     df['CH_CALCULADA'] = (fim_dt - inicio_dt).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
 
-    # 3. Tratamento de Datas e Extração do Mês
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
+    df['ANO'] = df['DATA_DT'].dt.year.astype(str)
     df = df.sort_values('DATA_DT')
 
-    # --- BARRA LATERAL: FILTROS AVANÇADOS ---
+    # --- BARRA LATERAL: FILTROS ---
     st.sidebar.header("🔍 Filtros de Análise")
     
+    anos = sorted(df['ANO'].dropna().unique().tolist())
     meses = sorted(df['MÊS'].dropna().unique().tolist())
     unidades = sorted(df['LOTAÇÃO'].dropna().unique().tolist())
-    profissionais = sorted(df['NOME COMPLETO'].dropna().unique().tolist())
     categorias = sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique().tolist())
 
-    f_mes = st.sidebar.multiselect("📅 Selecione o Mês:", meses)
+    f_ano = st.sidebar.multiselect("📅 Selecione o Ano:", anos)
+    f_mes = st.sidebar.multiselect("📆 Selecione o Mês:", meses)
     f_unidade = st.sidebar.multiselect("📍 Unidade (Lotação):", unidades)
     f_categoria = st.sidebar.multiselect("⚕️ Categoria Profissional:", categorias)
-    f_nome = st.sidebar.multiselect("👤 Nome do Profissional:", profissionais)
 
-    # Aplicação da Lógica de Filtro
+    # Aplicação dos Filtros
     df_f = df.copy()
+    if f_ano: df_f = df_f[df_f['ANO'].isin(f_ano)]
     if f_mes: df_f = df_f[df_f['MÊS'].isin(f_mes)]
     if f_unidade: df_f = df_f[df_f['LOTAÇÃO'].isin(f_unidade)]
     if f_categoria: df_f = df_f[df_f['CATEGORIA PROFISSIONAL'].isin(f_categoria)]
-    if f_nome: df_f = df_f[df_f['NOME COMPLETO'].isin(f_nome)]
 
     if df_f.empty:
         st.warning("⚠️ Nenhum dado encontrado para os filtros aplicados.")
@@ -81,7 +212,13 @@ try:
         m1, m2, m3 = st.columns(3)
         m1.metric("Total de Capacitações", len(df_f))
         m2.metric("Horas Totais Formativas", f"{df_f['CH_CALCULADA'].sum():.1f} h")
-        m3.metric("Média de Horas/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f} h")
+        
+        # Corrigindo a métrica de adesão para evitar divisão por zero se a lista estiver vazia
+        if len(LISTA_MESTRA_NOMES) > 0:
+            adesao = (df_f['NOME COMPLETO'].nunique() / len(LISTA_MESTRA_NOMES)) * 100
+        else:
+            adesao = 0
+        m3.metric("Adesão da Lista Mestra", f"{adesao:.1f}%")
 
         st.markdown("---")
 
@@ -94,74 +231,57 @@ try:
             st.bar_chart(chart_registros, color="#29b5e8")
 
         with col_dir:
-            st.subheader("⏱️ Carga Horária Total por Unidade")
-            chart_horas = df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum().sort_values(ascending=True)
-            st.bar_chart(chart_horas, color="#ff4b4b")
+            st.subheader("🏆 TOP 10 - Profissionais (Carga Horária)")
+            ranking_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().sort_values(ascending=True).tail(10)
+            st.bar_chart(ranking_prof, color="#ffc107")
 
         st.markdown("---")
 
-        # --- BLOCO 3: ANÁLISE DETALHADA ---
-        c1, c2 = st.columns([1, 1.5])
+        # --- BLOCO 3: CRUZAMENTO E BUSCA ATIVA ---
+        st.subheader("🕵️ Monitoramento de Participação Individual")
         
-        with c1:
-            st.subheader("🏆 Destaque Profissional por Unidade")
-            destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
-            idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
-            st.dataframe(destaque.loc[idx, ['LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'Qtd']], use_container_width=True, hide_index=True)
+        # Criando DataFrame da Lista Mestra
+        df_mestra = pd.DataFrame({'NOME COMPLETO': [n.strip().upper() for n in LISTA_MESTRA_NOMES]})
+        
+        # Consolidando horas por profissional no filtro atual
+        horas_por_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
+        
+        # Cruzamento (Merge)
+        cruzamento = pd.merge(df_mestra, horas_por_prof, on='NOME COMPLETO', how='left').fillna(0)
+        cruzamento.columns = ['PROFISSIONAL', 'CARGA HORÁRIA TOTAL']
+        
+        col_lista1, col_lista2 = st.columns(2)
+        
+        with col_lista1:
+            st.markdown("✅ **Carga Horária por Profissional**")
+            st.dataframe(cruzamento.sort_values('CARGA HORÁRIA TOTAL', ascending=False), use_container_width=True, hide_index=True)
+            
+        with col_lista2:
+            st.markdown("🚩 **Busca Ativa: Profissionais sem Registros**")
+            faltantes = cruzamento[cruzamento['CARGA HORÁRIA TOTAL'] == 0]['PROFISSIONAL']
+            if not faltantes.empty:
+                st.dataframe(faltantes, use_container_width=True, hide_index=True)
+            else:
+                st.success("Todos os profissionais da lista mestra realizaram lançamentos!")
 
-        with c2:
-            st.subheader("📋 Resumo de Temas por Categoria")
-            resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                'DESCRIÇÃO BREVE DA ATIVIDADE': lambda x: ' | '.join(x.dropna().astype(str).unique()),
-                'CH_CALCULADA': 'sum'
-            }).reset_index()
-            resumo.columns = ['CATEGORIA', 'TEMAS TRABALHADOS', 'TOTAL HORAS']
-            resumo['TOTAL HORAS'] = resumo['TOTAL HORAS'].round(1).astype(str) + " h"
-            st.dataframe(resumo, use_container_width=True, hide_index=True)
-
-        # Tabela Bruta (Expansível)
-        with st.expander("🔍 Ver todos os detalhes dos profissionais filtrados"):
-            st.write(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']])
-
-        # --- BLOCO 4: GERADOR DE INFORME PARA WHATSAPP ---
         st.markdown("---")
-        st.subheader("📱 Informe para WhatsApp")
-        st.markdown("Revise o resumo automático das atividades filtradas e compartilhe com as equipes.")
 
+        # --- BLOCO 4: INFORME WHATSAPP ---
+        st.subheader("📱 Informe para WhatsApp")
         unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
         meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
-        total_horas = f"{df_f['CH_CALCULADA'].sum():.1f}"
-        total_capacitacoes = len(df_f)
-
+        
         mensagem = f"🏥 *Informe de Educação Permanente*\n"
         mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
         mensagem += f"📅 *Referência:* {meses_texto}\n\n"
-        mensagem += f"✅ *Atividades Registradas:* {total_capacitacoes}\n"
-        mensagem += f"⏳ *Carga Horária Total:* {total_horas}h\n\n"
+        mensagem += f"✅ *Atividades Registradas:* {len(df_f)}\n"
+        mensagem += f"⏳ *Carga Horária Total:* {df_f['CH_CALCULADA'].sum():.1f}h\n\n"
+        mensagem += f"🥇 *Destaque:* {horas_por_prof.iloc[0]['NOME COMPLETO'] if not horas_por_prof.empty else 'N/A'}\n\n"
+        mensagem += f"Vamos juntos fortalecer nossa rede! 💪"
 
-        if 'TIPO DE ATIVIDADE REALIZADA' in df_f.columns:
-            temas_comuns = df_f['TIPO DE ATIVIDADE REALIZADA'].value_counts().head(3).index.tolist()
-            if temas_comuns:
-                mensagem += f"📌 *Principais Focos Trabalhados:*\n"
-                for tema in temas_comuns:
-                    mensagem += f"- {tema}\n"
-
-        mensagem += f"\nParabéns a todos pelo excelente engajamento e vamos juntos planejar os próximos passos! 💪"
-
-        texto_editavel = st.text_area("Edite a mensagem abaixo se necessário antes de enviar:", value=mensagem, height=250)
-
-        texto_formatado_url = urllib.parse.quote(texto_editavel)
-        
-        link_web = f"https://web.whatsapp.com/send?text={texto_formatado_url}"
-        link_app = f"https://wa.me/?text={texto_formatado_url}"
-
-        col_w1, col_w2 = st.columns(2)
-        with col_w1:
-            st.link_button("🌐 Enviar pelo WhatsApp WEB", link_web, type="primary", use_container_width=True)
-        with col_w2:
-            st.link_button("📱 Enviar pelo Aplicativo", link_app, use_container_width=True)
-            
-        st.caption("💡 **Dica:** Se os botões falharem, basta clicar no texto acima, apertar Ctrl+A e Ctrl+C para copiar!")
+        texto_editavel = st.text_area("Edite a mensagem antes de enviar:", value=mensagem, height=150)
+        link_wpp = f"https://web.whatsapp.com/send?text={urllib.parse.quote(texto_editavel)}"
+        st.link_button("📲 Enviar Resumo no WhatsApp WEB", link_wpp, type="primary")
 
 except Exception as e:
     st.error(f"Erro ao processar dados: {e}")

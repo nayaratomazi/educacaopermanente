@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Configuração da página
-st.set_page_config(page_title="Dashboard EP - Bauru", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Dashboard EP | Bauru", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 1. LISTA MESTRA DE COLABORADORES (379 NOMES)
+# LISTA MESTRA DE COLABORADORES (379 NOMES)
 # ==========================================
 LISTA_MESTRA_NOMES = [
     "ADRIANA CRISTINA DOS SANTOS", "ADRIANA SANTOS DE ARAUJO", "ADRIEL LUCAS COSTA CUNHA", 
@@ -146,12 +148,12 @@ def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
 
-# Cabeçalho
+# Cabeçalho Principal (Visão Pública)
 st.title("Painel de Indicadores | Educação Permanente")
 st.markdown("Monitoramento de engajamento e carga horária formativa da rede.")
 st.divider()
 
-# Sidebar
+# Sidebar de Controle
 st.sidebar.header("Painel de Controle")
 if st.sidebar.button("Atualizar Base de Dados"):
     st.cache_data.clear()
@@ -164,26 +166,23 @@ try:
     # --- PROCESSAMENTO DOS DADOS ---
     df.columns = df.columns.str.strip().str.upper()
     
-    # 1. Unificação de colunas de nome
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
     
-    # Identificação das colunas de tempo
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
 
-    # 2. Tratamento de Horas e Carga Horária
     inicio_dt = pd.to_datetime(df[col_inicio].astype(str), errors='coerce')
     fim_dt = pd.to_datetime(df[col_fim].astype(str), errors='coerce')
     df['CH_CALCULADA'] = (fim_dt - inicio_dt).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
 
-    # 3. Tratamento de Datas, Mês e Ano
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
+    df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m') # Usado para os deltas temporais
     df = df.sort_values('DATA_DT')
 
     # --- BARRA LATERAL: FILTROS ---
@@ -212,79 +211,129 @@ try:
     if df_f.empty:
         st.warning("Nenhum dado encontrado para os filtros aplicados no momento.")
     else:
-        # --- BLOCO 1: MÉTRICAS GERAIS ---
+        # --- VISAO PÚBLICA (Minimalista) ---
         m1, m2, m3 = st.columns(3)
         m1.metric("Total de Capacitações", len(df_f))
         m2.metric("Horas Totais Formativas", f"{df_f['CH_CALCULADA'].sum():.1f} h")
         m3.metric("Média de Horas/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f} h")
-
         st.divider()
 
-        # --- BLOCO 2: GRÁFICOS VISUAIS ---
         col_esq, col_dir = st.columns(2)
-
         with col_esq:
             st.subheader("Ranking de Registros por Unidade")
             chart_registros = df_f['LOTAÇÃO'].value_counts().sort_values(ascending=True)
             st.bar_chart(chart_registros, color="#29b5e8")
-
         with col_dir:
             st.subheader("Carga Horária Total por Unidade")
             chart_horas = df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum().sort_values(ascending=True)
             st.bar_chart(chart_horas, color="#ff4b4b")
-
         st.divider()
 
-        # --- BLOCO 3: ANÁLISE DETALHADA ---
-        c1, c2 = st.columns([1, 1.5])
-        
-        with c1:
-            st.subheader("Destaque Profissional por Unidade")
-            destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
-            idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
-            st.dataframe(destaque.loc[idx, ['LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'Qtd']], use_container_width=True, hide_index=True)
-
-        with c2:
-            st.subheader("Resumo de Temas por Categoria")
-            resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                'DESCRIÇÃO BREVE DA ATIVIDADE': lambda x: ' | '.join(x.dropna().astype(str).unique()),
-                'CH_CALCULADA': 'sum'
-            }).reset_index()
-            resumo.columns = ['CATEGORIA', 'TEMAS TRABALHADOS', 'TOTAL HORAS']
-            resumo['TOTAL HORAS'] = resumo['TOTAL HORAS'].round(1).astype(str) + " h"
-            st.dataframe(resumo, use_container_width=True, hide_index=True)
-
-        # Tabela Bruta (Expansível)
-        with st.expander("Ver base detalhada de profissionais filtrados"):
+        with st.expander("Consultar Base Detalhada (Pública)"):
             st.dataframe(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']], use_container_width=True, hide_index=True)
 
         st.divider()
 
-        # --- ÁREA PROTEGIDA: BUSCA ATIVA E RANKING ---
-        st.subheader("Área da Coordenação")
-        with st.expander("Acessar Monitoramento de Gestão"):
+        # --- ÁREA PROTEGIDA: BI DA COORDENAÇÃO (Avançado) ---
+        st.subheader("Área da Coordenação | BI Estratégico")
+        with st.expander("Acessar Inteligência de Dados"):
             senha = st.text_input("Credencial de acesso:", type="password")
+            
             if senha == "bauru2024":
                 
-                col_p1, col_p2 = st.columns(2)
+                # --- 1. INDICADORES COM SETAS DE TENDÊNCIA (DELTAS) ---
+                st.markdown("**Indicadores de Tendência (Mês a Mês)**")
+                periodos = sorted(df_f['PERIODO'].unique())
                 
-                # Ranking de Profissionais
-                with col_p1:
-                    st.markdown("**Ranking: Carga Horária Individual**")
-                    ranking_ind = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index()
+                if len(periodos) >= 2:
+                    mes_atual = periodos[-1]
+                    mes_anterior = periodos[-2]
+                    
+                    df_atual = df_f[df_f['PERIODO'] == mes_atual]
+                    df_ant = df_f[df_f['PERIODO'] == mes_anterior]
+                    
+                    ch_atual = df_atual['CH_CALCULADA'].sum()
+                    ch_ant = df_ant['CH_CALCULADA'].sum()
+                    delta_ch = ((ch_atual - ch_ant) / ch_ant) * 100 if ch_ant > 0 else 0
+                    
+                    cap_atual = len(df_atual)
+                    cap_ant = len(df_ant)
+                    delta_cap = ((cap_atual - cap_ant) / cap_ant) * 100 if cap_ant > 0 else 0
+                    
+                    c_ind1, c_ind2 = st.columns(2)
+                    c_ind1.metric(f"Carga Horária ({mes_atual})", f"{ch_atual:.1f} h", f"{delta_ch:.1f}% vs {mes_anterior}")
+                    c_ind2.metric(f"Capacitações ({mes_atual})", f"{cap_atual}", f"{delta_cap:.1f}% vs {mes_anterior}")
+                else:
+                    st.info("Para visualizar tendências (Deltas), a base de dados filtrada precisa conter atividades de pelo menos dois meses distintos.")
+                
+                st.divider()
+
+                # --- 2. EVOLUÇÃO TEMPORAL (LINHAS) ---
+                st.markdown("**Evolução Temporal do Engajamento (Carga Horária)**")
+                df_linha = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
+                df_linha = df_linha.sort_values('PERIODO')
+                
+                fig_linha = px.line(df_linha, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, 
+                                    labels={'PERIODO': 'Mês/Ano', 'CH_CALCULADA': 'Horas Acumuladas', 'LOTAÇÃO': 'Unidade'},
+                                    template='plotly_white')
+                fig_linha.update_layout(hovermode="x unified")
+                st.plotly_chart(fig_linha, use_container_width=True)
+                
+                st.divider()
+
+                # --- 3. DISTRIBUIÇÃO E RADAR PROFISSIONAL ---
+                col_bi1, col_bi2 = st.columns(2)
+                
+                with col_bi1:
+                    st.markdown("**Distribuição por Temas Abordados**")
+                    # Busca a coluna de tema mais provável
+                    coluna_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df_f.columns else df_f.columns[-1]
+                    df_rosca = df_f.groupby(coluna_tema)['CH_CALCULADA'].sum().reset_index()
+                    
+                    fig_rosca = px.pie(df_rosca, values='CH_CALCULADA', names=coluna_tema, hole=0.4,
+                                       template='plotly_white')
+                    fig_rosca.update_traces(textposition='inside', textinfo='percent+label')
+                    fig_rosca.update_layout(showlegend=False)
+                    st.plotly_chart(fig_rosca, use_container_width=True)
+
+                with col_bi2:
+                    st.markdown("**Foco de Treinamento por Categoria (Radar)**")
+                    df_radar = df_f.groupby('CATEGORIA PROFISSIONAL')['CH_CALCULADA'].sum().reset_index()
+                    
+                    fig_radar = go.Figure(data=go.Scatterpolar(
+                        r=df_radar['CH_CALCULADA'],
+                        theta=df_radar['CATEGORIA PROFISSIONAL'],
+                        fill='toself',
+                        marker=dict(color='#29b5e8')
+                    ))
+                    fig_radar.update_layout(
+                        polar=dict(radialaxis=dict(visible=True)),
+                        showlegend=False,
+                        template='plotly_white'
+                    )
+                    st.plotly_chart(fig_radar, use_container_width=True)
+
+                st.divider()
+
+                # --- 4. CONTROLE DE GESTÃO E BUSCA ATIVA ---
+                col_gestao1, col_gestao2 = st.columns(2)
+                
+                with col_gestao1:
+                    st.markdown("**Monitoramento: Maiores Cargas Horárias**")
+                    ranking_ind = df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index()
                     st.dataframe(ranking_ind, use_container_width=True, hide_index=True)
                 
-                # Busca Ativa
-                with col_p2:
-                    st.markdown("**Busca Ativa: Profissionais sem Registros**")
+                with col_gestao2:
+                    st.markdown("**Auditoria: Profissionais com Zero Lançamentos**")
                     df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
                     registrados = df_f['NOME COMPLETO'].unique()
                     faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(registrados)]
                     
-                    st.metric("Total de Ausências (Filtro Atual)", len(faltantes))
+                    st.metric("Total de Pendências no Filtro", len(faltantes))
                     st.dataframe(faltantes, use_container_width=True, hide_index=True)
+                    
             elif senha != "":
-                st.error("Credencial inválida.")
+                st.error("Credencial inválida. Acesso negado.")
 
 except Exception as e:
     st.error(f"Erro na estabilidade do servidor: {e}")

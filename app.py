@@ -263,4 +263,44 @@ try:
         st.subheader("🔐 Área da Coordenação")
         with st.expander("Clique para abrir o Monitoramento de Gestão (Requer Senha)"):
             senha = st.text_input("Digite a senha de acesso:", type="password")
-            if senha == "ba
+            if senha == "bauru2024": # Você pode mudar esta senha aqui
+                
+                col_p1, col_p2 = st.columns(2)
+                
+                # Ranking de Profissionais
+                with col_p1:
+                    st.markdown("🏆 **Ranking: Carga Horária Individual**")
+                    ranking_ind = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index()
+                    st.dataframe(ranking_ind, use_container_width=True, hide_index=True)
+                
+                # Busca Ativa
+                with col_p2:
+                    st.markdown("🚩 **Busca Ativa: Profissionais sem Registros**")
+                    df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
+                    registrados = df_f['NOME COMPLETO'].unique()
+                    faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(registrados)]
+                    
+                    st.metric("Total sem Lançamento", len(faltantes))
+                    st.dataframe(faltantes, use_container_width=True, hide_index=True)
+            elif senha != "":
+                st.error("Senha incorreta!")
+
+        # --- BLOCO 4: GERADOR DE INFORME PARA WHATSAPP ---
+        st.markdown("---")
+        st.subheader("📱 Informe para WhatsApp")
+        unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
+        meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
+        
+        mensagem = f"🏥 *Informe de Educação Permanente*\n"
+        mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
+        mensagem += f"📅 *Referência:* {meses_texto}\n\n"
+        mensagem += f"✅ *Atividades Registradas:* {len(df_f)}\n"
+        mensagem += f"⏳ *Carga Horária Total:* {df_f['CH_CALCULADA'].sum():.1f}h\n\n"
+        mensagem += f"Vamos juntos fortalecer nossa rede! 💪"
+
+        texto_editavel = st.text_area("Edite a mensagem:", value=mensagem, height=150)
+        link_wpp = f"https://web.whatsapp.com/send?text={urllib.parse.quote(texto_editavel)}"
+        st.link_button("📲 Enviar Resumo no WhatsApp WEB", link_wpp, type="primary")
+
+except Exception as e:
+    st.error(f"Erro ao processar dados: {e}")

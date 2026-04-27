@@ -249,9 +249,6 @@ try:
             resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
-        with st.expander("Ver base de dados completa"):
-            st.dataframe(df_f, use_container_width=True, hide_index=True)
-
         st.divider()
 
         # --- ÁREA DA COORDENAÇÃO ---

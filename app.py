@@ -6,7 +6,7 @@ import urllib.parse
 st.set_page_config(page_title="Dashboard EP - Bauru", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 1. LISTA MESTRA DE COLABORADORES DA REDE
+# 1. LISTA MESTRA DE COLABORADORES (379 NOMES)
 # ==========================================
 LISTA_MESTRA_NOMES = [
     "ADRIANA CRISTINA DOS SANTOS", "ADRIANA SANTOS DE ARAUJO", "ADRIEL LUCAS COSTA CUNHA", 
@@ -139,10 +139,8 @@ LISTA_MESTRA_NOMES = [
     "MARIA FERNANDA LOSSILA", "ELIZABETH CRISTINA BATISTA", "REGINA APARECIDA DE FREITAS DOS SANTOS"
 ]
 
-# ==========================================
 # CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
-# ==========================================
 
 @st.cache_data(ttl=60)
 def carregar_dados(url):
@@ -151,8 +149,9 @@ def carregar_dados(url):
 
 # Cabeçalho
 st.title("📊 Painel de Indicadores - Educação Permanente")
-st.markdown("Gestão de engajamento e monitoramento de carga horária da ESF.")
+st.markdown("Análise visual de engajamento e carga horária da ESF.")
 
+# Sidebar
 if st.sidebar.button("🔄 Atualizar Base de Dados"):
     st.cache_data.clear()
     st.rerun()
@@ -164,22 +163,23 @@ try:
     # --- PROCESSAMENTO DOS DADOS ---
     df.columns = df.columns.str.strip().str.upper()
     
-    # Unificação inteligente de colunas de nome (mantendo o histórico)
+    # 1. Unificação de colunas de nome
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
     
-    # Identificação das colunas de tempo e data
+    # Identificação das colunas de tempo
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
 
-    # Tratamento de Horas e Datas
+    # 2. Tratamento de Horas e Carga Horária
     inicio_dt = pd.to_datetime(df[col_inicio].astype(str), errors='coerce')
     fim_dt = pd.to_datetime(df[col_fim].astype(str), errors='coerce')
     df['CH_CALCULADA'] = (fim_dt - inicio_dt).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
 
+    # 3. Tratamento de Datas, Mês e Ano
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
@@ -191,19 +191,22 @@ try:
     anos = sorted(df['ANO'].dropna().unique().tolist())
     meses = sorted(df['MÊS'].dropna().unique().tolist())
     unidades = sorted(df['LOTAÇÃO'].dropna().unique().tolist())
+    profissionais = sorted(df['NOME COMPLETO'].dropna().unique().tolist())
     categorias = sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique().tolist())
 
     f_ano = st.sidebar.multiselect("📅 Selecione o Ano:", anos)
     f_mes = st.sidebar.multiselect("📆 Selecione o Mês:", meses)
     f_unidade = st.sidebar.multiselect("📍 Unidade (Lotação):", unidades)
     f_categoria = st.sidebar.multiselect("⚕️ Categoria Profissional:", categorias)
+    f_nome = st.sidebar.multiselect("👤 Nome do Profissional:", profissionais)
 
-    # Aplicação dos Filtros
+    # Aplicação da Lógica de Filtro
     df_f = df.copy()
     if f_ano: df_f = df_f[df_f['ANO'].isin(f_ano)]
     if f_mes: df_f = df_f[df_f['MÊS'].isin(f_mes)]
     if f_unidade: df_f = df_f[df_f['LOTAÇÃO'].isin(f_unidade)]
     if f_categoria: df_f = df_f[df_f['CATEGORIA PROFISSIONAL'].isin(f_categoria)]
+    if f_nome: df_f = df_f[df_f['NOME COMPLETO'].isin(f_nome)]
 
     if df_f.empty:
         st.warning("⚠️ Nenhum dado encontrado para os filtros aplicados.")
@@ -212,13 +215,7 @@ try:
         m1, m2, m3 = st.columns(3)
         m1.metric("Total de Capacitações", len(df_f))
         m2.metric("Horas Totais Formativas", f"{df_f['CH_CALCULADA'].sum():.1f} h")
-        
-        # Corrigindo a métrica de adesão para evitar divisão por zero se a lista estiver vazia
-        if len(LISTA_MESTRA_NOMES) > 0:
-            adesao = (df_f['NOME COMPLETO'].nunique() / len(LISTA_MESTRA_NOMES)) * 100
-        else:
-            adesao = 0
-        m3.metric("Adesão da Lista Mestra", f"{adesao:.1f}%")
+        m3.metric("Média de Horas/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f} h")
 
         st.markdown("---")
 
@@ -231,57 +228,39 @@ try:
             st.bar_chart(chart_registros, color="#29b5e8")
 
         with col_dir:
-            st.subheader("🏆 TOP 10 - Profissionais (Carga Horária)")
-            ranking_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().sort_values(ascending=True).tail(10)
-            st.bar_chart(ranking_prof, color="#ffc107")
+            st.subheader("⏱️ Carga Horária Total por Unidade")
+            chart_horas = df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum().sort_values(ascending=True)
+            st.bar_chart(chart_horas, color="#ff4b4b")
 
         st.markdown("---")
 
-        # --- BLOCO 3: CRUZAMENTO E BUSCA ATIVA ---
-        st.subheader("🕵️ Monitoramento de Participação Individual")
+        # --- BLOCO 3: ANÁLISE DETALHADA ---
+        c1, c2 = st.columns([1, 1.5])
         
-        # Criando DataFrame da Lista Mestra
-        df_mestra = pd.DataFrame({'NOME COMPLETO': [n.strip().upper() for n in LISTA_MESTRA_NOMES]})
-        
-        # Consolidando horas por profissional no filtro atual
-        horas_por_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
-        
-        # Cruzamento (Merge)
-        cruzamento = pd.merge(df_mestra, horas_por_prof, on='NOME COMPLETO', how='left').fillna(0)
-        cruzamento.columns = ['PROFISSIONAL', 'CARGA HORÁRIA TOTAL']
-        
-        col_lista1, col_lista2 = st.columns(2)
-        
-        with col_lista1:
-            st.markdown("✅ **Carga Horária por Profissional**")
-            st.dataframe(cruzamento.sort_values('CARGA HORÁRIA TOTAL', ascending=False), use_container_width=True, hide_index=True)
-            
-        with col_lista2:
-            st.markdown("🚩 **Busca Ativa: Profissionais sem Registros**")
-            faltantes = cruzamento[cruzamento['CARGA HORÁRIA TOTAL'] == 0]['PROFISSIONAL']
-            if not faltantes.empty:
-                st.dataframe(faltantes, use_container_width=True, hide_index=True)
-            else:
-                st.success("Todos os profissionais da lista mestra realizaram lançamentos!")
+        with c1:
+            st.subheader("🏆 Destaque Profissional por Unidade")
+            destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
+            idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
+            st.dataframe(destaque.loc[idx, ['LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'Qtd']], use_container_width=True, hide_index=True)
+
+        with c2:
+            st.subheader("📋 Resumo de Temas por Categoria")
+            resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
+                'DESCRIÇÃO BREVE DA ATIVIDADE': lambda x: ' | '.join(x.dropna().astype(str).unique()),
+                'CH_CALCULADA': 'sum'
+            }).reset_index()
+            resumo.columns = ['CATEGORIA', 'TEMAS TRABALHADOS', 'TOTAL HORAS']
+            resumo['TOTAL HORAS'] = resumo['TOTAL HORAS'].round(1).astype(str) + " h"
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
+
+        # Tabela Bruta (Expansível)
+        with st.expander("🔍 Ver todos os detalhes dos profissionais filtrados"):
+            st.write(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']])
 
         st.markdown("---")
 
-        # --- BLOCO 4: INFORME WHATSAPP ---
-        st.subheader("📱 Informe para WhatsApp")
-        unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
-        meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
-        
-        mensagem = f"🏥 *Informe de Educação Permanente*\n"
-        mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
-        mensagem += f"📅 *Referência:* {meses_texto}\n\n"
-        mensagem += f"✅ *Atividades Registradas:* {len(df_f)}\n"
-        mensagem += f"⏳ *Carga Horária Total:* {df_f['CH_CALCULADA'].sum():.1f}h\n\n"
-        mensagem += f"🥇 *Destaque:* {horas_por_prof.iloc[0]['NOME COMPLETO'] if not horas_por_prof.empty else 'N/A'}\n\n"
-        mensagem += f"Vamos juntos fortalecer nossa rede! 💪"
-
-        texto_editavel = st.text_area("Edite a mensagem antes de enviar:", value=mensagem, height=150)
-        link_wpp = f"https://web.whatsapp.com/send?text={urllib.parse.quote(texto_editavel)}"
-        st.link_button("📲 Enviar Resumo no WhatsApp WEB", link_wpp, type="primary")
-
-except Exception as e:
-    st.error(f"Erro ao processar dados: {e}")
+        # --- ÁREA PROTEGIDA: BUSCA ATIVA E RANKING ---
+        st.subheader("🔐 Área da Coordenação")
+        with st.expander("Clique para abrir o Monitoramento de Gestão (Requer Senha)"):
+            senha = st.text_input("Digite a senha de acesso:", type="password")
+            if senha == "ba

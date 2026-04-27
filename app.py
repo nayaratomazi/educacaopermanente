@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import urllib.parse
 
 # Configuração da página
 st.set_page_config(page_title="Dashboard EP - Bauru", layout="wide", initial_sidebar_state="expanded")
@@ -148,16 +147,18 @@ def carregar_dados(url):
     return df
 
 # Cabeçalho
-st.title("📊 Painel de Indicadores - Educação Permanente")
-st.markdown("Análise visual de engajamento e carga horária da ESF.")
+st.title("Painel de Indicadores | Educação Permanente")
+st.markdown("Monitoramento de engajamento e carga horária formativa da rede.")
+st.divider()
 
 # Sidebar
-if st.sidebar.button("🔄 Atualizar Base de Dados"):
+st.sidebar.header("Painel de Controle")
+if st.sidebar.button("Atualizar Base de Dados"):
     st.cache_data.clear()
     st.rerun()
 
 try:
-    with st.spinner('Sincronizando com a planilha...'):
+    with st.spinner('Sincronizando base de dados...'):
         df = carregar_dados(LINK_GOOGLE_SHEETS)
         
     # --- PROCESSAMENTO DOS DADOS ---
@@ -186,7 +187,7 @@ try:
     df = df.sort_values('DATA_DT')
 
     # --- BARRA LATERAL: FILTROS ---
-    st.sidebar.header("🔍 Filtros de Análise")
+    st.sidebar.subheader("Filtros de Análise")
     
     anos = sorted(df['ANO'].dropna().unique().tolist())
     meses = sorted(df['MÊS'].dropna().unique().tolist())
@@ -194,11 +195,11 @@ try:
     profissionais = sorted(df['NOME COMPLETO'].dropna().unique().tolist())
     categorias = sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique().tolist())
 
-    f_ano = st.sidebar.multiselect("📅 Selecione o Ano:", anos)
-    f_mes = st.sidebar.multiselect("📆 Selecione o Mês:", meses)
-    f_unidade = st.sidebar.multiselect("📍 Unidade (Lotação):", unidades)
-    f_categoria = st.sidebar.multiselect("⚕️ Categoria Profissional:", categorias)
-    f_nome = st.sidebar.multiselect("👤 Nome do Profissional:", profissionais)
+    f_ano = st.sidebar.multiselect("Selecione o Ano:", anos)
+    f_mes = st.sidebar.multiselect("Selecione o Mês:", meses)
+    f_unidade = st.sidebar.multiselect("Unidade de Lotação:", unidades)
+    f_categoria = st.sidebar.multiselect("Categoria Profissional:", categorias)
+    f_nome = st.sidebar.multiselect("Nome do Profissional:", profissionais)
 
     # Aplicação da Lógica de Filtro
     df_f = df.copy()
@@ -209,7 +210,7 @@ try:
     if f_nome: df_f = df_f[df_f['NOME COMPLETO'].isin(f_nome)]
 
     if df_f.empty:
-        st.warning("⚠️ Nenhum dado encontrado para os filtros aplicados.")
+        st.warning("Nenhum dado encontrado para os filtros aplicados no momento.")
     else:
         # --- BLOCO 1: MÉTRICAS GERAIS ---
         m1, m2, m3 = st.columns(3)
@@ -217,34 +218,34 @@ try:
         m2.metric("Horas Totais Formativas", f"{df_f['CH_CALCULADA'].sum():.1f} h")
         m3.metric("Média de Horas/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f} h")
 
-        st.markdown("---")
+        st.divider()
 
         # --- BLOCO 2: GRÁFICOS VISUAIS ---
         col_esq, col_dir = st.columns(2)
 
         with col_esq:
-            st.subheader("📈 Ranking de Registros por Unidade")
+            st.subheader("Ranking de Registros por Unidade")
             chart_registros = df_f['LOTAÇÃO'].value_counts().sort_values(ascending=True)
             st.bar_chart(chart_registros, color="#29b5e8")
 
         with col_dir:
-            st.subheader("⏱️ Carga Horária Total por Unidade")
+            st.subheader("Carga Horária Total por Unidade")
             chart_horas = df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum().sort_values(ascending=True)
             st.bar_chart(chart_horas, color="#ff4b4b")
 
-        st.markdown("---")
+        st.divider()
 
         # --- BLOCO 3: ANÁLISE DETALHADA ---
         c1, c2 = st.columns([1, 1.5])
         
         with c1:
-            st.subheader("🏆 Destaque Profissional por Unidade")
+            st.subheader("Destaque Profissional por Unidade")
             destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
             idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
             st.dataframe(destaque.loc[idx, ['LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'Qtd']], use_container_width=True, hide_index=True)
 
         with c2:
-            st.subheader("📋 Resumo de Temas por Categoria")
+            st.subheader("Resumo de Temas por Categoria")
             resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
                 'DESCRIÇÃO BREVE DA ATIVIDADE': lambda x: ' | '.join(x.dropna().astype(str).unique()),
                 'CH_CALCULADA': 'sum'
@@ -254,53 +255,36 @@ try:
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
         # Tabela Bruta (Expansível)
-        with st.expander("🔍 Ver todos os detalhes dos profissionais filtrados"):
-            st.write(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']])
+        with st.expander("Ver base detalhada de profissionais filtrados"):
+            st.dataframe(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']], use_container_width=True, hide_index=True)
 
-        st.markdown("---")
+        st.divider()
 
         # --- ÁREA PROTEGIDA: BUSCA ATIVA E RANKING ---
-        st.subheader("🔐 Área da Coordenação")
-        with st.expander("Clique para abrir o Monitoramento de Gestão (Requer Senha)"):
-            senha = st.text_input("Digite a senha de acesso:", type="password")
-            if senha == "bauru2024": # Você pode mudar esta senha aqui
+        st.subheader("Área da Coordenação")
+        with st.expander("Acessar Monitoramento de Gestão"):
+            senha = st.text_input("Credencial de acesso:", type="password")
+            if senha == "bauru2024":
                 
                 col_p1, col_p2 = st.columns(2)
                 
                 # Ranking de Profissionais
                 with col_p1:
-                    st.markdown("🏆 **Ranking: Carga Horária Individual**")
+                    st.markdown("**Ranking: Carga Horária Individual**")
                     ranking_ind = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index()
                     st.dataframe(ranking_ind, use_container_width=True, hide_index=True)
                 
                 # Busca Ativa
                 with col_p2:
-                    st.markdown("🚩 **Busca Ativa: Profissionais sem Registros**")
+                    st.markdown("**Busca Ativa: Profissionais sem Registros**")
                     df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
                     registrados = df_f['NOME COMPLETO'].unique()
                     faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(registrados)]
                     
-                    st.metric("Total sem Lançamento", len(faltantes))
+                    st.metric("Total de Ausências (Filtro Atual)", len(faltantes))
                     st.dataframe(faltantes, use_container_width=True, hide_index=True)
             elif senha != "":
-                st.error("Senha incorreta!")
-
-        # --- BLOCO 4: GERADOR DE INFORME PARA WHATSAPP ---
-        st.markdown("---")
-        st.subheader("📱 Informe para WhatsApp")
-        unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
-        meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
-        
-        mensagem = f"🏥 *Informe de Educação Permanente*\n"
-        mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
-        mensagem += f"📅 *Referência:* {meses_texto}\n\n"
-        mensagem += f"✅ *Atividades Registradas:* {len(df_f)}\n"
-        mensagem += f"⏳ *Carga Horária Total:* {df_f['CH_CALCULADA'].sum():.1f}h\n\n"
-        mensagem += f"Vamos juntos fortalecer nossa rede! 💪"
-
-        texto_editavel = st.text_area("Edite a mensagem:", value=mensagem, height=150)
-        link_wpp = f"https://web.whatsapp.com/send?text={urllib.parse.quote(texto_editavel)}"
-        st.link_button("📲 Enviar Resumo no WhatsApp WEB", link_wpp, type="primary")
+                st.error("Credencial inválida.")
 
 except Exception as e:
-    st.error(f"Erro ao processar dados: {e}")
+    st.error(f"Erro na estabilidade do servidor: {e}")

@@ -31,33 +31,37 @@ try:
     # --- PROCESSAMENTO DOS DADOS ---
     df.columns = df.columns.str.strip().str.upper()
     
+    # 1. UNIFICAÇÃO INTELIGENTE DE COLUNAS DE NOME
+    # Procuramos todas as colunas que contenham "NOME" e "COMPLETO"
+    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
+    if colunas_nome:
+        # Mesclamos as colunas: onde a primeira estiver vazia, pegamos o dado da segunda
+        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0]
+    
     # Identificação das colunas de tempo
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
 
-    # 1. Tratamento de Horas e Carga Horária
+    # 2. Tratamento de Horas e Carga Horária
     inicio_dt = pd.to_datetime(df[col_inicio].astype(str), errors='coerce')
     fim_dt = pd.to_datetime(df[col_fim].astype(str), errors='coerce')
     df['CH_CALCULADA'] = (fim_dt - inicio_dt).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
 
-    # 2. Tratamento de Datas e Extração do Mês
+    # 3. Tratamento de Datas e Extração do Mês
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
-    # Criando uma coluna amigável para o filtro (Ex: 01 - Jan)
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
-    df = df.sort_values('DATA_DT') # Ordena cronologicamente
+    df = df.sort_values('DATA_DT')
 
     # --- BARRA LATERAL: FILTROS AVANÇADOS ---
     st.sidebar.header("🔍 Filtros de Análise")
     
-    # Listas para os filtros
     meses = sorted(df['MÊS'].dropna().unique().tolist())
     unidades = sorted(df['LOTAÇÃO'].dropna().unique().tolist())
     profissionais = sorted(df['NOME COMPLETO'].dropna().unique().tolist())
     categorias = sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique().tolist())
 
-    # Componentes de Filtro
     f_mes = st.sidebar.multiselect("📅 Selecione o Mês:", meses)
     f_unidade = st.sidebar.multiselect("📍 Unidade (Lotação):", unidades)
     f_categoria = st.sidebar.multiselect("⚕️ Categoria Profissional:", categorias)
@@ -124,13 +128,11 @@ try:
         st.subheader("📱 Informe para WhatsApp")
         st.markdown("Revise o resumo automático das atividades filtradas e compartilhe com as equipes.")
 
-        # Montando as variáveis do texto
         unidades_texto = ", ".join(f_unidade) if f_unidade else "Toda a Rede"
         meses_texto = ", ".join(f_mes) if f_mes else "Período Geral"
         total_horas = f"{df_f['CH_CALCULADA'].sum():.1f}"
         total_capacitacoes = len(df_f)
 
-        # Escrevendo a mensagem formatada para o WhatsApp
         mensagem = f"🏥 *Informe de Educação Permanente*\n"
         mensagem += f"📍 *Unidade(s):* {unidades_texto}\n"
         mensagem += f"📅 *Referência:* {meses_texto}\n\n"
@@ -146,16 +148,11 @@ try:
 
         mensagem += f"\nParabéns a todos pelo excelente engajamento e vamos juntos planejar os próximos passos! 💪"
 
-        # Caixa de texto para edição
-        texto_editavel = st.text_area("Edite a mensagem abaixo se necessário:", value=mensagem, height=250)
+        texto_editavel = st.text_area("Edite a mensagem abaixo se necessário antes de enviar:", value=mensagem, height=250)
 
-        # Codificando o texto para link
         texto_formatado_url = urllib.parse.quote(texto_editavel)
         
-        # Link 1: Força abrir no WhatsApp Web (Navegador) - Costuma falhar menos no PC
         link_web = f"https://web.whatsapp.com/send?text={texto_formatado_url}"
-        
-        # Link 2: O formato curto oficial (wa.me) para o aplicativo
         link_app = f"https://wa.me/?text={texto_formatado_url}"
 
         col_w1, col_w2 = st.columns(2)
@@ -164,7 +161,7 @@ try:
         with col_w2:
             st.link_button("📱 Enviar pelo Aplicativo", link_app, use_container_width=True)
             
-        st.caption("💡 **Dica:** Se os botões falharem devido ao bloqueio do computador, basta clicar dentro da caixa de texto acima, apertar **Ctrl+A** (selecionar tudo), depois **Ctrl+C** (copiar) e colar direto na sua conversa!")
+        st.caption("💡 **Dica:** Se os botões falharem, basta clicar no texto acima, apertar Ctrl+A e Ctrl+C para copiar!")
 
 except Exception as e:
     st.error(f"Erro ao processar dados: {e}")

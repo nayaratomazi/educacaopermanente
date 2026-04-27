@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from collections import Counter
+import re
 
 # Configuração da página
-st.set_page_config(page_title="Dashboard EP | Bauru", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Gestão EP - Bauru", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# LISTA MESTRA DE COLABORADORES (379 NOMES)
+# 1. LISTA MESTRA DE COLABORADORES (379 NOMES)
 # ==========================================
 LISTA_MESTRA_NOMES = [
     "ADRIANA CRISTINA DOS SANTOS", "ADRIANA SANTOS DE ARAUJO", "ADRIEL LUCAS COSTA CUNHA", 
@@ -140,7 +142,6 @@ LISTA_MESTRA_NOMES = [
     "MARIA FERNANDA LOSSILA", "ELIZABETH CRISTINA BATISTA", "REGINA APARECIDA DE FREITAS DOS SANTOS"
 ]
 
-# CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
 
 @st.cache_data(ttl=60)
@@ -148,24 +149,34 @@ def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
 
-# Cabeçalho Principal (Visão Pública)
-st.title("Painel de Indicadores | Educação Permanente")
-st.markdown("Monitoramento de engajamento e carga horária formativa da rede.")
+def extrair_temas_inteligentes(textos):
+    """Função simples para identificar palavras-chave mais comuns em temas."""
+    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
+    palavras = []
+    for t in textos:
+        if isinstance(t, str):
+            # Limpa caracteres especiais e divide por palavras
+            pals = re.findall(r'\w+', t.upper())
+            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
+    return Counter(palavras).most_common(10)
+
+# Interface Principal
+st.title("Painel de Gestão | Educação Permanente")
+st.caption("Atenção Primária à Saúde - Monitoramento Estratégico")
 st.divider()
 
-# Sidebar de Controle
-st.sidebar.header("Painel de Controle")
-if st.sidebar.button("Atualizar Base de Dados"):
+# Sidebar
+st.sidebar.header("Configurações")
+if st.sidebar.button("Atualizar Dados"):
     st.cache_data.clear()
     st.rerun()
 
 try:
     with st.spinner('Sincronizando base de dados...'):
         df = carregar_dados(LINK_GOOGLE_SHEETS)
-        
-    # --- PROCESSAMENTO DOS DADOS ---
-    df.columns = df.columns.str.strip().str.upper()
     
+    # Processamento
+    df.columns = df.columns.str.strip().str.upper()
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
@@ -173,167 +184,129 @@ try:
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
+    col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
 
-    inicio_dt = pd.to_datetime(df[col_inicio].astype(str), errors='coerce')
-    fim_dt = pd.to_datetime(df[col_fim].astype(str), errors='coerce')
-    df['CH_CALCULADA'] = (fim_dt - inicio_dt).dt.total_seconds() / 3600
+    df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
+                         pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
-
+    
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
-    df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m') # Usado para os deltas temporais
-    df = df.sort_values('DATA_DT')
+    df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m')
 
-    # --- BARRA LATERAL: FILTROS ---
-    st.sidebar.subheader("Filtros de Análise")
-    
-    anos = sorted(df['ANO'].dropna().unique().tolist())
-    meses = sorted(df['MÊS'].dropna().unique().tolist())
-    unidades = sorted(df['LOTAÇÃO'].dropna().unique().tolist())
-    profissionais = sorted(df['NOME COMPLETO'].dropna().unique().tolist())
-    categorias = sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique().tolist())
+    # Filtros
+    st.sidebar.subheader("Filtros")
+    f_ano = st.sidebar.multiselect("Ano", sorted(df['ANO'].dropna().unique()))
+    f_mes = st.sidebar.multiselect("Mês", sorted(df['MÊS'].dropna().unique()))
+    f_unidade = st.sidebar.multiselect("Unidade", sorted(df['LOTAÇÃO'].dropna().unique()))
+    f_cat = st.sidebar.multiselect("Categoria", sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique()))
+    f_nome = st.sidebar.multiselect("Nome do Profissional", sorted(df['NOME COMPLETO'].dropna().unique()))
 
-    f_ano = st.sidebar.multiselect("Selecione o Ano:", anos)
-    f_mes = st.sidebar.multiselect("Selecione o Mês:", meses)
-    f_unidade = st.sidebar.multiselect("Unidade de Lotação:", unidades)
-    f_categoria = st.sidebar.multiselect("Categoria Profissional:", categorias)
-    f_nome = st.sidebar.multiselect("Nome do Profissional:", profissionais)
-
-    # Aplicação da Lógica de Filtro
     df_f = df.copy()
     if f_ano: df_f = df_f[df_f['ANO'].isin(f_ano)]
     if f_mes: df_f = df_f[df_f['MÊS'].isin(f_mes)]
     if f_unidade: df_f = df_f[df_f['LOTAÇÃO'].isin(f_unidade)]
-    if f_categoria: df_f = df_f[df_f['CATEGORIA PROFISSIONAL'].isin(f_categoria)]
+    if f_cat: df_f = df_f[df_f['CATEGORIA PROFISSIONAL'].isin(f_cat)]
     if f_nome: df_f = df_f[df_f['NOME COMPLETO'].isin(f_nome)]
 
     if df_f.empty:
-        st.warning("Nenhum dado encontrado para os filtros aplicados no momento.")
+        st.info("Aguardando seleção de dados nos filtros.")
     else:
-        # --- VISAO PÚBLICA (Minimalista) ---
+        # --- VISÃO PÚBLICA ---
         m1, m2, m3 = st.columns(3)
-        m1.metric("Total de Capacitações", len(df_f))
-        m2.metric("Horas Totais Formativas", f"{df_f['CH_CALCULADA'].sum():.1f} h")
-        m3.metric("Média de Horas/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f} h")
+        m1.metric("Registros", len(df_f))
+        m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
+        m3.metric("Média/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f}h")
+        
         st.divider()
 
-        col_esq, col_dir = st.columns(2)
-        with col_esq:
-            st.subheader("Ranking de Registros por Unidade")
-            chart_registros = df_f['LOTAÇÃO'].value_counts().sort_values(ascending=True)
-            st.bar_chart(chart_registros, color="#29b5e8")
-        with col_dir:
-            st.subheader("Carga Horária Total por Unidade")
-            chart_horas = df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum().sort_values(ascending=True)
-            st.bar_chart(chart_horas, color="#ff4b4b")
-        st.divider()
-
-        with st.expander("Consultar Base Detalhada (Pública)"):
-            st.dataframe(df_f[['DATA DA ATIVIDADE', 'NOME COMPLETO', 'LOTAÇÃO', 'CATEGORIA PROFISSIONAL', 'CH_CALCULADA']], use_container_width=True, hide_index=True)
+        # Gráficos Principais
+        c_g1, c_g2 = st.columns(2)
+        with c_g1:
+            st.subheader("Registros por Unidade")
+            st.bar_chart(df_f['LOTAÇÃO'].value_counts(), color="#29b5e8")
+        with c_g2:
+            st.subheader("Carga Horária por Unidade")
+            st.bar_chart(df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum(), color="#ff4b4b")
 
         st.divider()
 
-        # --- ÁREA PROTEGIDA: BI DA COORDENAÇÃO (Avançado) ---
-        st.subheader("Área da Coordenação | BI Estratégico")
-        with st.expander("Acessar Inteligência de Dados"):
-            senha = st.text_input("Credencial de acesso:", type="password")
-            
+        # --- RESTAURADO: DESTAQUE E TEMAS POR CATEGORIA ---
+        c_t1, c_t2 = st.columns([1, 1.5])
+        with c_t1:
+            st.subheader("Destaques por Unidade")
+            destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
+            idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
+            st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
+        
+        with c_t2:
+            st.subheader("Carga Horária e Temas por Categoria")
+            resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
+                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', # Mostra apenas os 3 primeiros para não poluir
+                'CH_CALCULADA': 'sum'
+            }).reset_index()
+            resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
+
+        with st.expander("Ver base de dados completa"):
+            st.dataframe(df_f, use_container_width=True, hide_index=True)
+
+        st.divider()
+
+        # --- ÁREA DA COORDENAÇÃO ---
+        st.header("Coordenação | Business Intelligence")
+        with st.expander("Autenticação Necessária"):
+            senha = st.text_input("Senha de acesso", type="password", key="sec")
             if senha == "bauru2024":
                 
-                # --- 1. INDICADORES COM SETAS DE TENDÊNCIA (DELTAS) ---
-                st.markdown("**Indicadores de Tendência (Mês a Mês)**")
+                # 1. Deltas de Tendência
+                st.subheader("Tendência Mensal")
                 periodos = sorted(df_f['PERIODO'].unique())
-                
                 if len(periodos) >= 2:
-                    mes_atual = periodos[-1]
-                    mes_anterior = periodos[-2]
-                    
-                    df_atual = df_f[df_f['PERIODO'] == mes_atual]
-                    df_ant = df_f[df_f['PERIODO'] == mes_anterior]
-                    
-                    ch_atual = df_atual['CH_CALCULADA'].sum()
-                    ch_ant = df_ant['CH_CALCULADA'].sum()
-                    delta_ch = ((ch_atual - ch_ant) / ch_ant) * 100 if ch_ant > 0 else 0
-                    
-                    cap_atual = len(df_atual)
-                    cap_ant = len(df_ant)
-                    delta_cap = ((cap_atual - cap_ant) / cap_ant) * 100 if cap_ant > 0 else 0
-                    
-                    c_ind1, c_ind2 = st.columns(2)
-                    c_ind1.metric(f"Carga Horária ({mes_atual})", f"{ch_atual:.1f} h", f"{delta_ch:.1f}% vs {mes_anterior}")
-                    c_ind2.metric(f"Capacitações ({mes_atual})", f"{cap_atual}", f"{delta_cap:.1f}% vs {mes_anterior}")
-                else:
-                    st.info("Para visualizar tendências (Deltas), a base de dados filtrada precisa conter atividades de pelo menos dois meses distintos.")
+                    curr, prev = periodos[-1], periodos[-2]
+                    h_curr = df_f[df_f['PERIODO'] == curr]['CH_CALCULADA'].sum()
+                    h_prev = df_f[df_f['PERIODO'] == prev]['CH_CALCULADA'].sum()
+                    delta = ((h_curr - h_prev) / h_prev) * 100 if h_prev > 0 else 0
+                    st.metric(f"Horas em {curr}", f"{h_curr:.1f}h", f"{delta:.1f}% vs {prev}")
                 
+                # 2. Gráfico de Evolução Interativo (Plotly)
+                st.subheader("Evolução Temporal do Engajamento")
+                df_evol = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
+                fig_line = px.line(df_evol, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, template="plotly_white")
+                st.plotly_chart(fig_line, use_container_width=True)
+
                 st.divider()
 
-                # --- 2. EVOLUÇÃO TEMPORAL (LINHAS) ---
-                st.markdown("**Evolução Temporal do Engajamento (Carga Horária)**")
-                df_linha = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
-                df_linha = df_linha.sort_values('PERIODO')
+                # 3. Análise Inteligente de Temas e Radar
+                c_bi1, c_bi2 = st.columns(2)
+                with c_bi1:
+                    st.subheader("Temas mais Abordados (Agrupados)")
+                    nuvem = extrair_temas_inteligentes(df_f[col_tema])
+                    df_nuvem = pd.DataFrame(nuvem, columns=['Termo', 'Frequência'])
+                    fig_tema = px.bar(df_nuvem, x='Frequência', y='Termo', orientation='h', color='Frequência', color_continuous_scale="Blues")
+                    st.plotly_chart(fig_tema, use_container_width=True)
                 
-                fig_linha = px.line(df_linha, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, 
-                                    labels={'PERIODO': 'Mês/Ano', 'CH_CALCULADA': 'Horas Acumuladas', 'LOTAÇÃO': 'Unidade'},
-                                    template='plotly_white')
-                fig_linha.update_layout(hovermode="x unified")
-                st.plotly_chart(fig_linha, use_container_width=True)
-                
-                st.divider()
-
-                # --- 3. DISTRIBUIÇÃO E RADAR PROFISSIONAL ---
-                col_bi1, col_bi2 = st.columns(2)
-                
-                with col_bi1:
-                    st.markdown("**Distribuição por Temas Abordados**")
-                    # Busca a coluna de tema mais provável
-                    coluna_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df_f.columns else df_f.columns[-1]
-                    df_rosca = df_f.groupby(coluna_tema)['CH_CALCULADA'].sum().reset_index()
-                    
-                    fig_rosca = px.pie(df_rosca, values='CH_CALCULADA', names=coluna_tema, hole=0.4,
-                                       template='plotly_white')
-                    fig_rosca.update_traces(textposition='inside', textinfo='percent+label')
-                    fig_rosca.update_layout(showlegend=False)
-                    st.plotly_chart(fig_rosca, use_container_width=True)
-
-                with col_bi2:
-                    st.markdown("**Foco de Treinamento por Categoria (Radar)**")
+                with c_bi2:
+                    st.subheader("Equilíbrio por Categoria (Radar)")
                     df_radar = df_f.groupby('CATEGORIA PROFISSIONAL')['CH_CALCULADA'].sum().reset_index()
-                    
-                    fig_radar = go.Figure(data=go.Scatterpolar(
-                        r=df_radar['CH_CALCULADA'],
-                        theta=df_radar['CATEGORIA PROFISSIONAL'],
-                        fill='toself',
-                        marker=dict(color='#29b5e8')
-                    ))
-                    fig_radar.update_layout(
-                        polar=dict(radialaxis=dict(visible=True)),
-                        showlegend=False,
-                        template='plotly_white'
-                    )
+                    fig_radar = go.Figure(data=go.Scatterpolar(r=df_radar['CH_CALCULADA'], theta=df_radar['CATEGORIA PROFISSIONAL'], fill='toself'))
                     st.plotly_chart(fig_radar, use_container_width=True)
 
                 st.divider()
 
-                # --- 4. CONTROLE DE GESTÃO E BUSCA ATIVA ---
-                col_gestao1, col_gestao2 = st.columns(2)
-                
-                with col_gestao1:
-                    st.markdown("**Monitoramento: Maiores Cargas Horárias**")
-                    ranking_ind = df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index()
-                    st.dataframe(ranking_ind, use_container_width=True, hide_index=True)
-                
-                with col_gestao2:
-                    st.markdown("**Auditoria: Profissionais com Zero Lançamentos**")
+                # 4. Monitoramento de Gestão
+                c_gest1, c_gest2 = st.columns(2)
+                with c_gest1:
+                    st.subheader("Ranking Individual")
+                    st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
+                with c_gest2:
+                    st.subheader("Busca Ativa (Zero Horas)")
                     df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
-                    registrados = df_f['NOME COMPLETO'].unique()
-                    faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(registrados)]
-                    
-                    st.metric("Total de Pendências no Filtro", len(faltantes))
-                    st.dataframe(faltantes, use_container_width=True, hide_index=True)
-                    
-            elif senha != "":
-                st.error("Credencial inválida. Acesso negado.")
+                    faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(df_f['NOME COMPLETO'].unique())]
+                    st.dataframe(faltantes, hide_index=True)
+            elif senha:
+                st.error("Senha incorreta.")
 
 except Exception as e:
-    st.error(f"Erro na estabilidade do servidor: {e}")
+    st.error(f"Erro no processamento: {e}")

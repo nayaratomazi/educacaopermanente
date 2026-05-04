@@ -232,18 +232,34 @@ try:
 
         st.divider()
 
-        # --- RESTAURADO: DESTAQUE E TEMAS POR CATEGORIA ---
+        # --- DESTAQUES E ANÁLISES POR CATEGORIA ---
         c_t1, c_t2 = st.columns([1, 1.5])
+        
         with c_t1:
             st.subheader("Destaques por Unidade")
             destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
             idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
             st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
+            
+            # Nova Tabela Adicionada: Atividades e CH por Categoria
+            st.subheader("Atividades e CH por Categoria")
+            resumo_cat = df_f.groupby('CATEGORIA PROFISSIONAL').agg(
+                Atividades=('CATEGORIA PROFISSIONAL', 'count'),
+                CH_Total=('CH_CALCULADA', 'sum')
+            ).reset_index()
+            resumo_cat['CH_Total'] = resumo_cat['CH_Total'].round(1).astype(str) + 'h'
+            st.dataframe(resumo_cat, use_container_width=True, hide_index=True)
         
         with c_t2:
-            st.subheader("Carga Horária e Temas por Categoria")
+            # Nova Tabela Adicionada: Categoria e Tema da Atividade
+            st.subheader("Relação: Categoria Profissional e Tema")
+            relacao_tema = df_f[['CATEGORIA PROFISSIONAL', col_tema]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
+            relacao_tema.columns = ['Categoria', 'Tema da Atividade']
+            st.dataframe(relacao_tema, use_container_width=True, hide_index=True)
+            
+            st.subheader("Carga Horária e Resumo de Temas por Categoria")
             resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', # Mostra apenas os 3 primeiros para não poluir
+                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
                 'CH_CALCULADA': 'sum'
             }).reset_index()
             resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
@@ -298,7 +314,7 @@ try:
                     st.subheader("Ranking Individual")
                     st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
                 with c_gest2:
-                    st.subheader("Colaborar sem nenhuma atividade lançada")
+                    st.subheader("Colaborador sem nenhuma atividade lançada")
                     df_mestra = pd.DataFrame({'NOME COMPLETO': [n.upper() for n in LISTA_MESTRA_NOMES]})
                     faltantes = df_mestra[~df_mestra['NOME COMPLETO'].isin(df_f['NOME COMPLETO'].unique())]
                     st.dataframe(faltantes, hide_index=True)

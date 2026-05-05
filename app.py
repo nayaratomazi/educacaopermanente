@@ -177,14 +177,29 @@ try:
     
     # Processamento
     df.columns = df.columns.str.strip().str.upper()
+    
+    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
+    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
+    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
+    if 'LOTAÇÃO' in df.columns:
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA')
+    if 'CATEGORIA PROFISSIONAL' in df.columns:
+        df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
+    # ----------------------------------------------------
+
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') # Trava para Nome
     
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
     col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
+
+    # Trava de tema vazio
+    if col_tema in df.columns:
+        df[col_tema] = df[col_tema].fillna('NÃO INFORMADO')
 
     df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
                          pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
@@ -215,7 +230,7 @@ try:
     else:
         # --- VISÃO PÚBLICA ---
         m1, m2, m3 = st.columns(3)
-        m1.metric("Registros", len(df_f))
+        m1.metric("Registros (Total)", len(df_f))
         m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
         m3.metric("Média/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f}h")
         

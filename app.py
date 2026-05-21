@@ -182,4 +182,439 @@ LISTA_MESTRA_NOMES = [
     ["LIVIA MOZARDO CASTIGLIO", "USF NOVA BAURU/901"],
     ["LOANA KARINA BENEDITO PEREIRA", "USF JARDIM GODOY/APOIO"],
     ["LORRAYNE FARIAS DOS SANTOS", "USF VILA SÃO PAULO/701"],
-    ["LUCAS MATHEUS RIB
+    ["LUCAS MATHEUS RIBEIRO", "ESF - SANTA EDWIRGES/APOIO"],
+    ["LUCIANA ALVES DOS SANTOS", "USF POUSADA II/801"],
+    ["LUCIANA APARECIDA DA SILVA", "EQUIPE SUBSTITUTA"],
+    ["LUCIANA APARECIDA VICENTINI CA", "USF JARDIM GODOY/21"],
+    ["LUCIMAR DOS SANTOS CAETANO", "USF SANTA EDWIRGES/APOIO"],
+    ["LUCIMARA CARVALHO DE BRITO", "USF JARDIM GODOY/21"],
+    ["LUIS FELIPE LIZI JORGE", "USF SANTA EDWIRGES/503"],
+    ["MAILON LESSA", "USF JARDIM GODOY/APOIO"],
+    ["MARCELLA CARDOSO GONÇALVES", "USF SANTA EDWIRGES/101"],
+    ["MARCELLA MONTOVANELLI MENECHELLI", "USF SANTA EDWIRGES/502"],
+    ["MARCELLY CRISTHINE DA SILVA", "USF VILA SÃO PAULO/702"],
+    ["MARCELO ANDRADE FERREIRA", "USF JARDIM GODOY/201"],
+    ["MARCELO JORGE GOMES", "USF NOVA BAURU/901"],
+    ["MARIA APARECIDA MARTINS ROSA", "USF VILA SÃO PAULO/APOIO"],
+    ["MARIA CAROLINA URSULINO BURATTO FRANCO", "USF VILA SÃO PAULO/701"],
+    ["MARIA FERNANDA FRANCISCA PAULA", "USF NOVE DE JULHO/APOIO"],
+    ["MARIA FERNANDA LOSSILA", "EQUIPE SUBSTITUTA"],
+    ["MARIA ISABEL DA COSTA", "USF VILA SÃO PAULO/401"],
+    ["MARIA LYANDRA CARVALHO", "USF NOVE DE JULHO/601"],
+    ["MARIANA BERTUCCO BAZAN", "USF POUSADA II/801"],
+    ["MARIANA MAGRO REINATO", "USF VILA DUTRA/76"],
+    ["MARIANA PERES FATORI", "USF VILA SÃO PAULO/401"],
+    ["MARIANE ALVES JATOBA", "USF SANTA EDWIRGES/101"],
+    ["MARIUZA GONCALVES VIEIRA", "USF SANTA EDWIRGES/501"],
+    ["MARLI GONÇALVES CARNIATO", "USF SANTA EDWIRGES"],
+    ["MATHEUS CAMARGO MARCIANO", "USF VILA DUTRA/71"],
+    ["MATHEUS SILVA ANTONIO", "USF VILA DUTRA/72"],
+    ["MAYARA GODOY PANUNTO", "USF VILA DUTRA/71"],
+    ["MAYARA MONTOVANI DE OLIVEIRA", "USF JARDIM GODOY/200"],
+    ["MAYRA DINIZ WASHINGTON", "EMULTI 03"],
+    ["MILENA NORONHA MUNHOZ", "USF SANTA EDWIRGES/503"],
+    ["MIRIAM CHRISTINELLI", "USF VILA SÃO PAULO/APOIO"],
+    ["MIRYELLI CAROLINE MACIEL", "EQUIPE SUBSTITUTA"],
+    ["NATALIA ALVES TOSTA OCANHA", "USF POUSADA II/APOIO FIXO"],
+    ["NATALIA CAVALHERI DE SOUZA GUERRERO", "USF VARGEM LIMPA / USF POUSADA II"],
+    ["NATALIA CRISTINA DOS SANTOS FLORIANO", "USF TIBIRIÇÁ/APOIO FIXO"],
+    ["NATALIA FIDENCIO NASCIMENTO", "USF JARDIM GODOY/21"],
+    ["NATHALY MARTINUCCI", "USF VARGEM LIMPA"],
+    ["NAYANE MARIA DE MELO ALEXANDRINO", "USF SANTA EDWIRGES/501"],
+    ["NAYARA COLEONE MUSTACIO ZANELI", "USF SANTA EDWIRGES/COORD"],
+    ["NAYARA SOBRINHO LEITE", "USF VARGEM LIMPA / USF TIBIRIÇÁ"],
+    ["NAYARA TOMAZI BATISTA", "EQUIPE EDUCAÇÃO PERMANENTE"],
+    ["NELI DE FATIMA DANIEL SANTOS", "USF NOVA BAURU/APOIO FIXO"],
+    ["NEYLA IVETTE YUTRONIC SERRANO", "EQUIPE EDUCAÇÃO PERMANENTE"],
+    ["NIELY RAÍSSA LIMA GUIMARÃES", "USF VILA DUTRA/APOIO"],
+    ["PATRICIA APARECIDA OLIVEIRA", "USF VILA DUTRA/APOIO"],
+    ["POLLIANY DO MONTE LANCA", "EMULTI 03"],
+    ["PRISCILA CALIGARIS CAGI", "USF VARGEM LIMPA"],
+    ["PRISCILA DOS SANTOS TRINDADE", "USF VILA DUTRA/APOIO"],
+    ["RAFAELA FERNANDA RODRIGUES FAUSTINO", "USF TIBIRIÇÁ/COORD"],
+    ["RAFAELA LOPES ALVES", "USF SANTA EDWIRGES/APOIO"],
+    ["RAI SAIKA PINTON", "USF SANTA EDWIRGES/APOIO"],
+    ["RAQUEL PEREIRA DA CONCEICAO", "USF VILA DUTRA/APOIO"],
+    ["RAQUEL PEREIRA DA SILVA", "USF TIBIRIÇÁ"],
+    ["RAYANE ISABELLE TURKOCIO FERRAREZI", "USF POUSADA II/APOIO"],
+    ["REGINA APARECIDA DE FREITAS DOS SANTOS", "EQUIPE SUBSTITUTA"],
+    ["REGINALDO CAETANO", "USF TIBIRIÇÁ/25"],
+    ["RENATA DE PAULA SOARES", "USF VILA DUTRA/APOIO"],
+    ["RENATA DI PAULA COSTA", "USF SANTA EDWIRGES/101"],
+    ["RICARDO QUIRINO FONSECA", "USF VILA SÃO PAULO/701"],
+    ["RICHELE BOICO DE SOUZA BARBOSA", "USF NOVA BAURU/APOIO"],
+    ["ROSIMEIRE APARECIDA GARCIA DA SILVA OLIVEIRA", "USF NOVE DE JULHO/601"],
+    ["SABRINA ALBANEZ OLIVIER", "USF TIBIRIÇÁ/APOIO"],
+    ["SANDRA CRISTINA DIAS CAMARGO MARTINS", "USF VILA DUTRA/72"],
+    ["SARA LEONCIO DE MELO GARCIA", "USF JARDIM GODOY/201"],
+    ["SELMA MARIA DA SILVA", "USF SANTA EDWIRGES/502"],
+    ["SHIRLEI APARECIDA PRONUNCIATE GUIMARÃES", "EQUIPE SUBSTITUTA"],
+    ["SILVANA APARECIDA STEKER PACHECO", "USF POUSADA II/801"],
+    ["SILVIA APARECIDA DE SOUZA SANTANA DO NASCIMENTO", "USF VILA DUTRA/APOIO"],
+    ["SILVIA HELENA FERNANDES", "USF POUSADA II/COORD"],
+    ["SIMONE MONTEIRO DA SILVA LOPES", "USF SANTA EDWIRGES/APOIO"],
+    ["SIMONE REGINA FARINHA", "USF VARGEM LIMPA/APOIO"],
+    ["SOLANGE CASTILHO", "USF NOVE DE JULHO/301"],
+    ["SOLANGE ESGOTI", "EQUIPE SUBSTITUTA"],
+    ["SUELLEN SIMONE GONZALES BERRO", "EMULTI 02"],
+    ["SUSAN NAWALY GONCALVES SANDOLI", "EMULTI 02"],
+    ["TAIENE DA SILVA MORETTO", "USF JARDIM GODOY/201"],
+    ["TAIS DIAS CESARIO", "USF JARDIM GODOY/21"],
+    ["TALITA CRISTINA DA SILVA RIBEIRO", "USF VILA DUTRA/71"],
+    ["TANIA REINALDO MARINS", "USF VILA DUTRA/APOIO"],
+    ["TATIANE BAZOTTI COSTA", "EQUIPE EDUCAÇÃO PERMANENTE"],
+    ["THAINA OLIVEIRA FELICIO OLIVATTI", "EMULTI 02"],
+    ["THAIS CRISTINA ALVES PINTO", "USF NOVA BAURU/901"],
+    ["THAIS NAYRA MACHADO", "USF NOVE DE JULHO/601"],
+    ["THAIS OTAVIANA PEREIRA PARDINO", "USF VARGEM LIMPA/APOIO"],
+    ["THAISE MARTINS SANTOS SANTANA", "EMULTI 03"],
+    ["THALES CABRAL BENINI FELISBERTO", "USF SANTA EDWIRGES/101"],
+    ["THALIA MOREIRA MANZUTI GARCIA", "USF VILA DUTRA/APOIO"],
+    ["THATIANE FRANCINI DA SILVA FERREIRA", "USF SANTA EDWIRGES/501"],
+    ["TIENE ARCANJO DE OLIVEIRA", "EQUIPE SUBSTITUTA"],
+    ["VALDINEIA NERIS DE SOUSA", "USF NOVE DE JULHO/COORD"],
+    ["VALERIA DE MIRANDA", "USF JARDIM GODOY/APOIO"],
+    ["VANUZA BARBOSA LEITE", "EQUIPE SUBSTITUTA"],
+    ["VERA LUCIA ALVES DA SILVA", "USF POUSADA II/APOIO"],
+    ["VICTOR FERREIRA RAMOS COLASSO", "USF SANTA EDWIRGES/501"],
+    ["VITÓRIA GABRIELLE RODRIGUES DOS SANTOS", "EQUIPE SUBSTITUTA"],
+    ["VIVIAN MARTINS GOMES", "USF TIBIRIÇÁ"],
+    ["VIVIANI MAXIMINO BAPTISTA BUENO", "USF POUSADA II/801"],
+    ["VYVIAN KELLEY ALVES CASTILHO", "USF SANTA EDWIRGES/APOIO"],
+    ["WANESSA VIEIRA CASTELO RODRIGUES", "USF NOVE DE JULHO/APOIO"],
+    ["WENDLER VINICIUS DA PAIXAO", "USF SANTA EDWIRGES/APOIO"],
+    ["WILLIAM AUGUSTO GRANDO", "USF SANTA EDWIRGES/503"],
+    ["YASMIM VITORIA DA SILVA SOUZA", "EQUIPE SUBSTITUTA"],
+    ["ZENAIDE BARBOSA HONORATO", "USF POUSADA II/801"],
+    ["ALESSANDRA REGINA DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ALINE APARECIDA DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA BEATRIZ CORPASSI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA CAROLINA CONDI DA MATA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA CAROLINA DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA CAROLINA LOPES MATSUMOTO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA LAURA ALMERIN TRABUCO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANA PAULA DE MATOS MILESKI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANDRESSA APARECIDA PEREIRA GOES PESUTO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ANNA LUIZA AMARANTE DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ARIANE KEVLIN RODRIGUES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["BARBARA LETICIA CHINALLI FERNANDES SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["BARBARA RAMOS MARQUES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["BEATRIZ BARRETO DE OLIVEIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["BEATRIZ PEREIRA CAMPOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["BEATRIZ SILVEIRA SILVERIO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["CARLA MARIA PEREIRA DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["CAROLINA CRISTINA BERGAMASCHI DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["CELESTE LUZIA CHRISOSTOMO DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["CHARLES VINICIUS ALVES VASQUE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DAIZE MANOEL DOS SONTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DAMARIS VASCONI DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DANIEL APARECIDO MARASSATTI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DAVYD AUGUSTO CASTELLI DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DAYANE FERNANDA LIMA DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DAYANE RAFAELA FARIAS FERREIRA TOMAZ", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["DJEINE GONÇALVES DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ELIANA PATRICIA PINTO FERNANDES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ELIZABETH DA SILVA LEMES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["EVERTON APARECIDO GARCIA LEAL", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FABIANA JORGE DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FABIANA PRADO DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FATIMA APARECIDA DE ASSIS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FERNANDA CRISTINA TERECIANO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FERNANDA DE SOUZA FERREIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FERNANDA SAN JULIANO PEREIRA PAULON", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FILIPE SAN JULIANO PEREIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FLAVIO LIBOIO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FRANCIELEN DA SILVA RIBEIRO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["FRANKLIN ABNER DE LIMA SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GILSIANDRA DA SILVA CAETANO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GIORDANA DE FREITAS COLACINO MENDES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GIOVANA GONÇALVES COSTA ARAUJO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GIOVANA GONÇALVES DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GIOVANA RENATA RECUCHE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GISELE ALVES DE MIRA SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GISELE LIPE BAUTZ", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GIULIA NARCIZO GARCIA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GLAUCIA APARECIDA DE JESUS COLOMBO VIEIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["GUILHERME FERNANDO MACIEL PRUDENTE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ISABELA APARECIDA RODRIGUES DA CRUZ JERONIMO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ISABELA CHAVES DE OLIVEIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ISABELA CRISTINA FLORENTINO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ISABELA DE OLIVEIRA ALVES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["IVAN VARAS CARDOSO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JAMILLE ALESSANDRA LEITE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JANAINA DE CARVALHO QUEIROGA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JAQUELINE PEREIRA DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JESSICA CARVALHO DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JESSICA CRISTINE LEITE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JOAO GABRIEL DA SILVA FREITAS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JOAO VITOR RINALDO DE SOUSA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JOSIANE SOARES DE SOUZA SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JUCINEIA DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JULIANA DE FATIMA RIBEIRO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JULIANA DE OLIVEIRA JUMONJI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JULIANA MOREIRA LOPES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JULIANA ORTIZ DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["JULIANE MACEGOZA DO AMARAL", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["KARINA MONTEIRO BATISTA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["KESLEY GARCIA IVASSAKI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LEANDRO ACACIO DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LEANDRO DAVANÇO FREIRE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LEONARDO HORNE GOMES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LEONARDO RICARDO DA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LETICIA ALVES FERREIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LUCIANE CRISTINA MAIA DE OLIVEIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["LUIDGI AGNNO ZELNYS CARLOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MAIARA APARECIDA FRANCO DA SILVEIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MARISA CRISTINA PRUDENTE RIBEIRO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MAYARA ANDRESSA BRUNA DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MELINA RODRIGUES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MIQUE ERIC GIMENES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["MIRIAN HELEN CARNEIRO DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["NATALIA CRISTINA DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["NATHALIA APAREC B.SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["NATHALIA DO CARMO LEME INACIO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["NATHALIA GONÇALVES COSTA CASAGRANDE BERNARDO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["NEYLOR JOSE ANTUNES DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PAMELA CRISTINA KURIO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PAMELA LARISSA FRANCO DA CRUZ ALVES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PAMELLA THAYARA DOS SANTOS", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PATRICIA ALINE RODRIGUES DE SOUZA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PATRICIA LIZANDRA MORETTI CRUZ", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PATRICIA MIRELI SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PAULO HENRIQUE MANGILI SERESUELA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["PAULO RICARDO SOLANA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["RAPHAELA GIOVANA ALVES CALVO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["RICARDO RUIVO BUSCH", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ROBSON LUIZ PEREIRA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["RODRIGO SANTOS SANTANA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["ROSIELI DE CARVALHO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["SAMARA MOREIRA INACIO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["SILVIA REGINA CELESTINO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["SILVIA SAYURI YATSU TAHARA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["SONIA APARECIDA FAGNANI", "USF SANTA EDWIRGES/SUB"],
+    ["TAYOANA CAROLINA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["THAIS CARDOSO DA SILVA SILVIERO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["THIAGO HENRIQUE CHANQUINI FRANCISCO", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["TIAGO PEREIRA ALEXANDRE", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["TIFANY DA SILVA TORRES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["VANESSA DOMINGOS BARBOSA", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["VANESSA FRACALOSSI", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["WESLEY DOS SANTOS CASTILHO RODRIGUES", "ACS - UNIDADE NÃO DEFINIDA"],
+    ["YURI HOLLANDER", "ACS - UNIDADE NÃO DEFINIDA"]
+]
+
+LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
+
+@st.cache_data(ttl=60)
+def carregar_dados(url):
+    df = pd.read_excel(url, engine='openpyxl')
+    return df
+
+def extrair_temas_inteligentes(textos):
+    """Função simples para identificar palavras-chave mais comuns em temas."""
+    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
+    palavras = []
+    for t in textos:
+        if isinstance(t, str):
+            # Limpa caracteres especiais e divide por palavras
+            pals = re.findall(r'\w+', t.upper())
+            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
+    return Counter(palavras).most_common(10)
+
+# Interface Principal
+st.title("Painel de Gestão | Educação Permanente")
+st.caption("Acompanhamento de atividades educativas")
+st.divider()
+
+# Sidebar
+st.sidebar.header("Configurações")
+if st.sidebar.button("Atualizar Dados"):
+    st.cache_data.clear()
+    st.rerun()
+
+try:
+    with st.spinner('Sincronizando base de dados...'):
+        df = carregar_dados(LINK_GOOGLE_SHEETS)
+    
+    # Processamento
+    df.columns = df.columns.str.strip().str.upper()
+    
+    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
+    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
+    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
+    if 'LOTAÇÃO' in df.columns:
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA')
+    if 'CATEGORIA PROFISSIONAL' in df.columns:
+        df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
+    # ----------------------------------------------------
+
+    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
+    if colunas_nome:
+        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') # Trava para Nome
+    
+    col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
+    col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
+    col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
+    col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
+
+    # Trava de tema vazio
+    if col_tema in df.columns:
+        df[col_tema] = df[col_tema].fillna('NÃO INFORMADO')
+
+    df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
+                         pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
+    df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
+    
+    df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
+    df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
+    df['ANO'] = df['DATA_DT'].dt.year.astype(str)
+    df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m')
+
+    # Filtros
+    st.sidebar.subheader("Filtros")
+    f_ano = st.sidebar.multiselect("Ano", sorted(df['ANO'].dropna().unique()))
+    f_mes = st.sidebar.multiselect("Mês", sorted(df['MÊS'].dropna().unique()))
+    f_unidade = st.sidebar.multiselect("Unidade", sorted(df['LOTAÇÃO'].dropna().unique()))
+    f_cat = st.sidebar.multiselect("Categoria", sorted(df['CATEGORIA PROFISSIONAL'].dropna().unique()))
+    f_nome = st.sidebar.multiselect("Nome do Profissional", sorted(df['NOME COMPLETO'].dropna().unique()))
+
+    df_f = df.copy()
+    if f_ano: df_f = df_f[df_f['ANO'].isin(f_ano)]
+    if f_mes: df_f = df_f[df_f['MÊS'].isin(f_mes)]
+    if f_unidade: df_f = df_f[df_f['LOTAÇÃO'].isin(f_unidade)]
+    if f_cat: df_f = df_f[df_f['CATEGORIA PROFISSIONAL'].isin(f_cat)]
+    if f_nome: df_f = df_f[df_f['NOME COMPLETO'].isin(f_nome)]
+
+    if df_f.empty:
+        st.info("Aguardando seleção de dados nos filtros.")
+    else:
+        # --- VISÃO PÚBLICA ---
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Registros (Total)", len(df_f))
+        m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
+        m3.metric("Média/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f}h")
+        
+        st.divider()
+
+        # Gráficos Principais
+        c_g1, c_g2 = st.columns(2)
+        with c_g1:
+            st.subheader("Registros por Unidade")
+            st.bar_chart(df_f['LOTAÇÃO'].value_counts(), color="#29b5e8")
+        with c_g2:
+            st.subheader("Carga Horária por Unidade")
+            st.bar_chart(df_f.groupby('LOTAÇÃO')['CH_CALCULADA'].sum(), color="#ff4b4b")
+
+        st.divider()
+
+        # --- DESTAQUES E ANÁLISES POR CATEGORIA ---
+        c_t1, c_t2 = st.columns([1, 1.5])
+        
+        with c_t1:
+            st.subheader("Destaques por Unidade")
+            destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
+            idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
+            st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
+            
+            # Tabela Adicionada: Atividades e CH por Categoria
+            st.subheader("Atividades e CH por Categoria")
+            resumo_cat = df_f.groupby('CATEGORIA PROFISSIONAL').agg(
+                Atividades=('CATEGORIA PROFISSIONAL', 'count'),
+                CH_Total=('CH_CALCULADA', 'sum')
+            ).reset_index()
+            resumo_cat['CH_Total'] = resumo_cat['CH_Total'].round(1).astype(str) + 'h'
+            st.dataframe(resumo_cat, use_container_width=True, hide_index=True)
+        
+        with c_t2:
+            # Tabela Adicionada: Categoria e Tema da Atividade
+            st.subheader("Relação: Categoria Profissional e Tema")
+            relacao_tema = df_f[['CATEGORIA PROFISSIONAL', col_tema]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
+            relacao_tema.columns = ['Categoria', 'Tema da Atividade']
+            st.dataframe(relacao_tema, use_container_width=True, hide_index=True)
+            
+            st.subheader("Carga Horária e Resumo de Temas por Categoria")
+            resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
+                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
+                'CH_CALCULADA': 'sum'
+            }).reset_index()
+            resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
+            st.dataframe(resumo, use_container_width=True, hide_index=True)
+
+        st.divider()
+
+        # --- ÁREA DA COORDENAÇÃO ---
+        st.header("Coordenação")
+        with st.expander("Autenticação Necessária"):
+            senha = st.text_input("Senha de acesso", type="password", key="sec")
+            if senha == "eps2026_esf":
+                
+                # 1. Deltas de Tendência
+                st.subheader("Tendência Mensal")
+                periodos = sorted(df_f['PERIODO'].unique())
+                if len(periodos) >= 2:
+                    curr, prev = periodos[-1], periodos[-2]
+                    h_curr = df_f[df_f['PERIODO'] == curr]['CH_CALCULADA'].sum()
+                    h_prev = df_f[df_f['PERIODO'] == prev]['CH_CALCULADA'].sum()
+                    delta = ((h_curr - h_prev) / h_prev) * 100 if h_prev > 0 else 0
+                    st.metric(f"Horas em {curr}", f"{h_curr:.1f}h", f"{delta:.1f}% vs {prev}")
+                
+                # 2. Gráfico de Evolução Interativo (Plotly)
+                st.subheader("Evolução Temporal do Engajamento")
+                df_evol = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
+                fig_line = px.line(df_evol, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, template="plotly_white")
+                st.plotly_chart(fig_line, use_container_width=True)
+
+                st.divider()
+
+                # 3. Análise Inteligente de Temas e Radar
+                c_bi1, c_bi2 = st.columns(2)
+                with c_bi1:
+                    st.subheader("Temas mais Abordados (Agrupados)")
+                    nuvem = extrair_temas_inteligentes(df_f[col_tema])
+                    df_nuvem = pd.DataFrame(nuvem, columns=['Termo', 'Frequência'])
+                    fig_tema = px.bar(df_nuvem, x='Frequência', y='Termo', orientation='h', color='Frequência', color_continuous_scale="Blues")
+                    st.plotly_chart(fig_tema, use_container_width=True)
+                
+                with c_bi2:
+                    st.subheader("Equilíbrio por Categoria (Radar)")
+                    df_radar = df_f.groupby('CATEGORIA PROFISSIONAL')['CH_CALCULADA'].sum().reset_index()
+                    fig_radar = go.Figure(data=go.Scatterpolar(r=df_radar['CH_CALCULADA'], theta=df_radar['CATEGORIA PROFISSIONAL'], fill='toself'))
+                    st.plotly_chart(fig_radar, use_container_width=True)
+
+                st.divider()
+
+                # 4. Monitoramento de Gestão e Meta (16h)
+                st.subheader("Monitoramento de Gestão e Metas (16h)")
+                
+                # Prepara os dados de Gestão
+                df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
+                df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
+                horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
+                gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
+                
+                c_gest1, c_gest2 = st.columns(2)
+                
+                with c_gest1:
+                    st.markdown("**Desempenho: Meta de 16h por Unidade**")
+                    gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
+                    resumo_meta = gestao.groupby('UNIDADE REGISTRADA').agg(
+                        Profissionais=('NOME COMPLETO', 'count'),
+                        Atingiram=('ATINGIU META', 'sum')
+                    ).reset_index()
+                    resumo_meta['% Sucesso'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + "%"
+                    st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
+                    
+                    st.markdown("**Ranking Individual (Filtro Atual)**")
+                    st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
+
+                with c_gest2:
+                    st.markdown("**Busca Ativa: Zero Horas (Por Unidade)**")
+                    faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']]
+                    st.dataframe(faltantes.sort_values('UNIDADE REGISTRADA'), hide_index=True)
+
+            elif senha:
+                st.error("Senha incorreta.")
+
+except Exception as e:
+    st.error(f"Erro no processamento: {e}")

@@ -10,6 +10,7 @@ st.set_page_config(page_title="Educação Permanente - ESF", layout="wide", init
 
 # ==========================================
 # 1. LISTA MESTRA DE COLABORADORES E UNIDADES
+# Relação estruturada para o cruzamento de metas
 # ==========================================
 LISTA_MESTRA_NOMES = [
     ["ADRIANA CRISTINA DOS SANTOS", "USF JARDIM GODOY/APOIO"],
@@ -97,7 +98,7 @@ LISTA_MESTRA_NOMES = [
     ["ELIZABETH CRISTINA BATISTA", "USF POUSADA II/801"],
     ["ELLEN APARECIDA COSTA", "USF SANTA EDWIRGES/501"],
     ["EMANUELLI GIGLIOLI OLIVATTO", "USF NOVA BAURU/901"],
-    ["EMYLLY YARA TEODORO DOS SANTOS", "EQUIPE SUBSTITUTA"],
+    ["EMYLLY YARA TEODORO DOS SANTOSEQUIPE SUBSTITUTA"],
     ["ENARA DE CASTRO DINIZ", "EMULTI 2"],
     ["ERICA CRISTINA MACHADO DA", "EMULTI 01"],
     ["ERICA RODRIGUES CAETANO PEROTA", "USF SANTA EDWIRGES/APOIO"],
@@ -179,7 +180,7 @@ LISTA_MESTRA_NOMES = [
     ["LIDIANE HELOISA JODAR", "USF VILA DUTRA/72"],
     ["LIGIA MARIA FERREIRA DO CARMO", "USF VILA SÃO PAULO / USF NOVA BAURU"],
     ["LISANDRA DA SILVA RODRIGUES", "USF VILA DUTRA/APOIO"],
-    ["LIVIA MOZARDO CASTIGLIO", "USF NOVA BAURU/901"],
+    ["LIVIA MOZARDO CASTIGLIOLI", "USF NOVA BAURU/901"],
     ["LOANA KARINA BENEDITO PEREIRA", "USF JARDIM GODOY/APOIO"],
     ["LORRAYNE FARIAS DOS SANTOS", "USF VILA SÃO PAULO/701"],
     ["LUCAS MATHEUS RIBEIRO", "ESF - SANTA EDWIRGES/APOIO"],
@@ -283,6 +284,7 @@ LISTA_MESTRA_NOMES = [
     ["VYVIAN KELLEY ALVES CASTILHO", "USF SANTA EDWIRGES/APOIO"],
     ["WANESSA VIEIRA CASTELO RODRIGUES", "USF NOVE DE JULHO/APOIO"],
     ["WENDLER VINICIUS DA PAIXAO", "USF SANTA EDWIRGES/APOIO"],
+    ["WESLEY DOS SANTOS CASTILHO RODRIGUES", "ACS - UNIDADE NÃO DEFINIDA"],
     ["WILLIAM AUGUSTO GRANDO", "USF SANTA EDWIRGES/503"],
     ["YASMIM VITORIA DA SILVA SOUZA", "EQUIPE SUBSTITUTA"],
     ["ZENAIDE BARBOSA HONORATO", "USF POUSADA II/801"],
@@ -391,7 +393,6 @@ LISTA_MESTRA_NOMES = [
     ["SAMARA MOREIRA INACIO", "ACS - UNIDADE NÃO DEFINIDA"],
     ["SILVIA REGINA CELESTINO", "ACS - UNIDADE NÃO DEFINIDA"],
     ["SILVIA SAYURI YATSU TAHARA", "ACS - UNIDADE NÃO DEFINIDA"],
-    ["SONIA APARECIDA FAGNANI", "USF SANTA EDWIRGES/SUB"],
     ["TAYOANA CAROLINA SILVA", "ACS - UNIDADE NÃO DEFINIDA"],
     ["THAIS CARDOSO DA SILVA SILVIERO", "ACS - UNIDADE NÃO DEFINIDA"],
     ["THIAGO HENRIQUE CHANQUINI FRANCISCO", "ACS - UNIDADE NÃO DEFINIDA"],
@@ -403,6 +404,92 @@ LISTA_MESTRA_NOMES = [
     ["YURI HOLLANDER", "ACS - UNIDADE NÃO DEFINIDA"]
 ]
 
+# ==========================================
+# 2. SISTEMA DE MONITORAMENTO INTELIGENTE (BI)
+# ==========================================
+
+def padronizar_unidade(x):
+    """Filtra e consolida as strings nas 9 USFs e 3 eMultis oficiais."""
+    if not isinstance(x, str):
+        return "NÃO INFORMADA"
+    val = x.upper().strip()
+    
+    if "GODOY" in val: return "USF JARDIM GODOY"
+    if "EDWIRGES" in val: return "USF SANTA EDWIRGES"
+    if "SÃO PAULO" in val or "SAO PAULO" in val: return "USF VILA SÃO PAULO"
+    if "VARGEM LIMPA" in val: return "USF VARGEM LIMPA"
+    if "NOVA BAURU" in val: return "USF NOVA BAURU"
+    if "NOVE DE JULHO" in val: return "USF NOVE DE JULHO"
+    if "TIBIRIÇÁ" in val or "TIBIRIÇA" in val: return "USF TIBIRIÇÁ"
+    if "DUTRA" in val: return "USF VILA DUTRA"
+    if "POUSADA" in val: return "USF POUSADA II"
+    if "EMULTI 01" in val or "EMULTI 1" in val: return "EMULTI 01"
+    if "EMULTI 02" in val or "EMULTI 2" in val: return "EMULTI 02"
+    if "EMULTI 03" in val or "EMULTI 3" in val: return "EMULTI 03"
+    if "SUBSTITUTA" in val: return "EQUIPE SUBSTITUTA"
+    if "SUPERVISÃO" in val or "SUPERVISAO" in val: return "ESF - SUPERVISÃO"
+    if "PERMANENTE" in val: return "EQUIPE EDUCAÇÃO PERMANENTE"
+    
+    return val.split('/')[0].split('-')[0].strip()
+
+def extrair_tema_real(texto):
+    """Remove termos de processo e métodos, deixando apenas o foco clínico/saúde real."""
+    if not isinstance(texto, str):
+        return "NÃO INFORMADO"
+    
+    t = texto.strip().upper()
+    
+    # Lista de expressões estruturais/administrativas longas
+    remover_expressoes = [
+        r'REUNIÃO DE ALINHAMENTO DE FLUXO SOBRE', r'REUNIÃO DE ALINHAMENTO DE FLUXO DE',
+        r'REUNIÃO DE ALINHAMENTO SOBRE', r'REUNIÃO DE ALINHAMENTO DE',
+        r'ALINHAMENTO DE FLUXO SOBRE', r'ALINHAMENTO DE FLUXO DE',
+        r'DISCUSSÃO DE CASO CLÍNICO DE', r'DISCUSSÃO DE CASO CLINICO DE',
+        r'DISCUSSÃO DE CASO DE', r'DISCUSSÃO DE FLUXO DE',
+        r'RODA DE CONVERSA SOBRE', r'RODA DE CONVERSA DE',
+        r'ESTUDO DE CASO SOBRE', r'ESTUDO DE CASO DE',
+        r'CAPACITAÇÃO SOBRE', r'CAPACITAÇÃO DE',
+        r'TREINAMENTO SOBRE', r'TREINAMENTO DE',
+        r'ORIENTAÇÃO SOBRE', r'ORIENTAÇÃO DE',
+        r'ORIENTACOES SOBRE', r'ORIENTACOES DE',
+        r'DISCUSSÃO SOBRE', r'DISCUSSÃO DE',
+        r'MANEJO CLÍNICO DE', r'MANEJO CLINICO DE', r'MANEJO DE',
+        r'REUNIÃO SOBRE', r'REUNIÃO DE',
+        r'REUNIAO SOBRE', r'REUNIAO DE',
+        r'DISCUSSAO SOBRE', r'DISCUSSAO DE',
+        r'ALINHAMENTO SOBRE', r'ALINHAMENTO DE',
+        r'PROCESSO DE TRABALHO DE', r'PROCESSO DE TRABALHO SOBRE', r'PROCESSO DE TRABALHO',
+        r'ACOLHIMENTO DE', r'ACOLHIMENTO SOBRE',
+        r'ORGANIZAÇÃO DE', r'ORGANIZAÇÃO SOBRE',
+        r'ATUALIZAÇÃO SOBRE', r'ATUALIZAÇÃO DE',
+        r'DIRETRIZES DE', r'DIRETRIZES SOBRE'
+    ]
+    
+    for exp in remover_expressoes:
+        t = re.sub(r'\b' + exp + r'\b', '', t)
+        
+    # Palavras soltas de processos e fluxogramas
+    palavras_avulsas = [
+        r'\bORIENTAÇÃO\b', r'\bORIENTAÇÕES\b', r'\bORIENTACAO\b', r'\bORIENTACOES\b',
+        r'\bDISCUSSÃO\b', r'\bDISCUSSÕES\b', r'\bDISCUSSAO\b', r'\bDISCUSSOES\b',
+        r'\bREUNIÃO\b', r'\bREUNIÕES\b', r'\bREUNIAO\b', r'\bREUNIOES\b',
+        r'\bFLUXO\b', r'\bFLUXOS\b', r'\bROTINA\b', r'\bROTINAS\b', r'\bPROTOCOLO\b', r'\bPROTOCOLOS\b',
+        r'\bCAPACITAÇÃO\b', r'\bCAPACITAÇÕES\b', r'\bCAPACITACAO\b', r'\bCAPACITACOES\b',
+        r'\bTREINAMENTO\b', r'\bTREINAMENTOS\b', r'\bAÇÃO\b', r'\bAÇÕES\b', r'\bACAO\b', r'\bACACOES\b',
+        r'\bPROCESSO\b', r'\bPROCESSOS\b', r'\bATIVIDADE\b', r'\bATIVIDADES\b'
+    ]
+    
+    for pal in palavras_avulsas:
+        t = re.sub(pal, '', t)
+    
+    # Conectivos isolados que restam no início do texto limpo
+    t = re.sub(r'^(DE|DO|DA|DOS|DAS|PARA|COM|EM|SOBRE|SOBRE A|SOBRE O|SOBRE OS|SOBRE AS|E)\s+', '', t.strip())
+    t = re.sub(r'\s+(DE|DO|DA|DOS|DAS|PARA|COM|EM|SOBRE)\s+', ' ', t)
+    
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t if (t and len(t) > 2) else "GERAL / ADMINISTRATIVO"
+
+# CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
 
 @st.cache_data(ttl=60)
@@ -410,23 +497,11 @@ def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
 
-def extrair_temas_inteligentes(textos):
-    """Função simples para identificar palavras-chave mais comuns em temas."""
-    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
-    palavras = []
-    for t in textos:
-        if isinstance(t, str):
-            # Limpa caracteres especiais e divide por palavras
-            pals = re.findall(r'\w+', t.upper())
-            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
-    return Counter(palavras).most_common(10)
-
-# Interface Principal
+# Estrutura Visual Principal
 st.title("Painel de Gestão | Educação Permanente")
 st.caption("Acompanhamento de atividades educativas")
 st.divider()
 
-# Sidebar
 st.sidebar.header("Configurações")
 if st.sidebar.button("Atualizar Dados"):
     st.cache_data.clear()
@@ -436,31 +511,30 @@ try:
     with st.spinner('Sincronizando base de dados...'):
         df = carregar_dados(LINK_GOOGLE_SHEETS)
     
-    # Processamento
     df.columns = df.columns.str.strip().str.upper()
     
-    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
-    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
-    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
+    # --- INTEGRAÇÃO DA TRAVA DE UNIFICAÇÃO DA REDE ---
     if 'LOTAÇÃO' in df.columns:
-        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA')
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
+        
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
-    # ----------------------------------------------------
 
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
-        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') # Trava para Nome
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') 
     
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
     col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
 
-    # Trava de tema vazio
+    # Processamento Inteligente do Tema de Saúde Real
     if col_tema in df.columns:
         df[col_tema] = df[col_tema].fillna('NÃO INFORMADO')
+        df['TEMA_REAL'] = df[col_tema].apply(extrair_tema_real)
 
     df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
                          pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
@@ -471,7 +545,7 @@ try:
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
     df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m')
 
-    # Filtros
+    # Filtros Estruturados
     st.sidebar.subheader("Filtros")
     f_ano = st.sidebar.multiselect("Ano", sorted(df['ANO'].dropna().unique()))
     f_mes = st.sidebar.multiselect("Mês", sorted(df['MÊS'].dropna().unique()))
@@ -489,7 +563,7 @@ try:
     if df_f.empty:
         st.info("Aguardando seleção de dados nos filtros.")
     else:
-        # --- VISÃO PÚBLICA ---
+        # --- VISÃO PÚBLICA CONSOLIDADA ---
         m1, m2, m3 = st.columns(3)
         m1.metric("Registros (Total)", len(df_f))
         m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
@@ -497,7 +571,6 @@ try:
         
         st.divider()
 
-        # Gráficos Principais
         c_g1, c_g2 = st.columns(2)
         with c_g1:
             st.subheader("Registros por Unidade")
@@ -508,16 +581,13 @@ try:
 
         st.divider()
 
-        # --- DESTAQUES E ANÁLISES POR CATEGORIA ---
         c_t1, c_t2 = st.columns([1, 1.5])
-        
         with c_t1:
             st.subheader("Destaques por Unidade")
             destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
             idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
             st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
             
-            # Tabela Adicionada: Atividades e CH por Categoria
             st.subheader("Atividades e CH por Categoria")
             resumo_cat = df_f.groupby('CATEGORIA PROFISSIONAL').agg(
                 Atividades=('CATEGORIA PROFISSIONAL', 'count'),
@@ -527,18 +597,18 @@ try:
             st.dataframe(resumo_cat, use_container_width=True, hide_index=True)
         
         with c_t2:
-            # Tabela Adicionada: Categoria e Tema da Atividade
             st.subheader("Relação: Categoria Profissional e Tema")
-            relacao_tema = df_f[['CATEGORIA PROFISSIONAL', col_tema]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
-            relacao_tema.columns = ['Categoria', 'Tema da Atividade']
+            # Uso do Tema Inteligente Filtrado na visualização pública
+            relacao_tema = df_f[['CATEGORIA PROFISSIONAL', 'TEMA_REAL']].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
+            relacao_tema.columns = ['Categoria', 'Tema Clínico Real']
             st.dataframe(relacao_tema, use_container_width=True, hide_index=True)
             
             st.subheader("Carga Horária e Resumo de Temas por Categoria")
             resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
+                'TEMA_REAL': lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
                 'CH_CALCULADA': 'sum'
             }).reset_index()
-            resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
+            resumo.columns = ['Categoria', 'Principais Assuntos de Saúde', 'Total Horas']
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -549,7 +619,6 @@ try:
             senha = st.text_input("Senha de acesso", type="password", key="sec")
             if senha == "eps2026_esf":
                 
-                # 1. Deltas de Tendência
                 st.subheader("Tendência Mensal")
                 periodos = sorted(df_f['PERIODO'].unique())
                 if len(periodos) >= 2:
@@ -559,7 +628,6 @@ try:
                     delta = ((h_curr - h_prev) / h_prev) * 100 if h_prev > 0 else 0
                     st.metric(f"Horas em {curr}", f"{h_curr:.1f}h", f"{delta:.1f}% vs {prev}")
                 
-                # 2. Gráfico de Evolução Interativo (Plotly)
                 st.subheader("Evolução Temporal do Engajamento")
                 df_evol = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
                 fig_line = px.line(df_evol, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, template="plotly_white")
@@ -567,13 +635,13 @@ try:
 
                 st.divider()
 
-                # 3. Análise Inteligente de Temas e Radar
                 c_bi1, c_bi2 = st.columns(2)
                 with c_bi1:
-                    st.subheader("Temas mais Abordados (Agrupados)")
-                    nuvem = extrair_temas_inteligentes(df_f[col_tema])
-                    df_nuvem = pd.DataFrame(nuvem, columns=['Termo', 'Frequência'])
-                    fig_tema = px.bar(df_nuvem, x='Frequência', y='Termo', orientation='h', color='Frequência', color_continuous_scale="Blues")
+                    st.subheader("Temas Clínicos mais Abordados (Limpos)")
+                    # Contagem direta dos temas de saúde unificados pela inteligência de texto
+                    df_contagem_temas = df_f['TEMA_REAL'].value_counts().reset_index()
+                    df_contagem_temas.columns = ['Assunto', 'Frequência']
+                    fig_tema = px.bar(df_contagem_temas.head(10), x='Frequência', y='Assunto', orientation='h', color='Frequência', color_continuous_scale="Blues")
                     st.plotly_chart(fig_tema, use_container_width=True)
                 
                 with c_bi2:
@@ -584,19 +652,20 @@ try:
 
                 st.divider()
 
-                # 4. Monitoramento de Gestão e Meta (16h)
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
                 
-                # Prepara os dados de Gestão
+                # Alinhamento da Lista Mestra aplicando a unificação de Unidades oficiais
                 df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
                 df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
+                df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
+                
                 horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
                 gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
                 
                 c_gest1, c_gest2 = st.columns(2)
                 
                 with c_gest1:
-                    st.markdown("**Desempenho: Meta de 16h por Unidade**")
+                    st.markdown("**Desempenho: Meta de 16h por Unidade Unificada**")
                     gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
                     resumo_meta = gestao.groupby('UNIDADE REGISTRADA').agg(
                         Profissionais=('NOME COMPLETO', 'count'),
@@ -605,11 +674,11 @@ try:
                     resumo_meta['% Sucesso'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + "%"
                     st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
                     
-                    st.markdown("**Ranking Individual (Filtro Atual)**")
+                    st.markdown("**Ranking Individual**")
                     st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
 
                 with c_gest2:
-                    st.markdown("**Busca Ativa: Zero Horas (Por Unidade)**")
+                    st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade Unificada)**")
                     faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']]
                     st.dataframe(faltantes.sort_values('UNIDADE REGISTRADA'), hide_index=True)
 

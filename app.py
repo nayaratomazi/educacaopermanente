@@ -418,6 +418,14 @@ def padronizar_unidade(x):
     # Corta a string na barra e pega apenas a primeira parte
     return val.split('/')[0].strip()
 
+# CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
+LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
+
+@st.cache_data(ttl=60)
+def carregar_dados(url):
+    df = pd.read_excel(url, engine='openpyxl')
+    return df
+
 def extrair_temas_inteligentes(textos):
     """Função simples para identificar palavras-chave mais comuns em temas."""
     stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
@@ -428,14 +436,6 @@ def extrair_temas_inteligentes(textos):
             pals = re.findall(r'\w+', t.upper())
             palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
     return Counter(palavras).most_common(10)
-
-# CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
-LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
-
-@st.cache_data(ttl=60)
-def carregar_dados(url):
-    df = pd.read_excel(url, engine='openpyxl')
-    return df
 
 # Interface Principal
 st.title("Painel de Gestão | Educação Permanente")
@@ -463,11 +463,19 @@ try:
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
 
-    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
+    # --- TRAVA DE SEGURANÇA PARA O NOME ---
+    # Garante que o sistema NUNCA confunda o nome da unidade com o nome do funcionário
+    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
+    if not colunas_nome:
+        colunas_nome = [c for c in df.columns if 'NOME' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
+        
     if colunas_nome:
-        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
+        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].astype(str).str.strip().str.upper()
         df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') 
-    
+    else:
+        df['NOME COMPLETO'] = 'NÃO INFORMADO'
+    # --------------------------------------
+
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
@@ -628,7 +636,7 @@ try:
                     st.markdown("**Ranking Individual**")
                     st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
                     
-                    # ADICIONADO AQUI: Nova planilha com o ranking de CADA funcionário (os 379)
+                    # Nova planilha com o ranking de CADA funcionário (os 379)
                     st.markdown("**Ranking de Cada Funcionário (Todos)**")
                     ranking_todos = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA']].copy()
                     ranking_todos = ranking_todos.sort_values(by='CH_CALCULADA', ascending=False)

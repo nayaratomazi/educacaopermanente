@@ -409,28 +409,13 @@ LISTA_MESTRA_NOMES = [
 # ==========================================
 
 def padronizar_unidade(x):
-    """Filtra e consolida as strings nas 9 USFs e 3 eMultis oficiais."""
+    """Mantém a Unidade e a Equipe exatas para o cálculo da coordenação."""
     if not isinstance(x, str):
         return "NÃO INFORMADA"
     val = x.upper().strip()
-    
-    if "GODOY" in val: return "USF JARDIM GODOY"
-    if "EDWIRGES" in val: return "USF SANTA EDWIRGES"
-    if "SÃO PAULO" in val or "SAO PAULO" in val: return "USF VILA SÃO PAULO"
-    if "VARGEM LIMPA" in val: return "USF VARGEM LIMPA"
-    if "NOVA BAURU" in val: return "USF NOVA BAURU"
-    if "NOVE DE JULHO" in val: return "USF NOVE DE JULHO"
-    if "TIBIRIÇÁ" in val or "TIBIRIÇA" in val: return "USF TIBIRIÇÁ"
-    if "DUTRA" in val: return "USF VILA DUTRA"
-    if "POUSADA" in val: return "USF POUSADA II"
-    if "EMULTI 01" in val or "EMULTI 1" in val: return "EMULTI 01"
-    if "EMULTI 02" in val or "EMULTI 2" in val: return "EMULTI 02"
-    if "EMULTI 03" in val or "EMULTI 3" in val: return "EMULTI 03"
-    if "SUBSTITUTA" in val: return "EQUIPE SUBSTITUTA"
-    if "SUPERVISÃO" in val or "SUPERVISAO" in val: return "ESF - SUPERVISÃO"
-    if "PERMANENTE" in val: return "EQUIPE EDUCAÇÃO PERMANENTE"
-    
-    return val.split('/')[0].split('-')[0].strip()
+    if "ACS" in val and "NÃO DEFINIDA" in val:
+        return "ACS - UNIDADE NÃO DEFINIDA"
+    return val
 
 # CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
@@ -648,7 +633,7 @@ try:
                     
                     st.markdown("**Ranking Individual Completo**")
                     ranking_completo = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA', 'Qtd_Atividades']].copy()
-                    ranking_completo.columns = ['Nome do Profissional', 'Unidade', 'Carga Horária (h)', 'Atividades Lançadas']
+                    ranking_completo.columns = ['Nome do Profissional', 'Unidade Oficial', 'Carga Horária (h)', 'Atividades Lançadas']
                     ranking_completo = ranking_completo.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
                     st.dataframe(ranking_completo, hide_index=True)
 

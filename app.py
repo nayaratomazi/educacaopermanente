@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from collections import Counter
 import re
+import unicodedata
 
 # Configuração da página
 st.set_page_config(page_title="Educação Permanente - ESF", layout="wide", initial_sidebar_state="expanded")
@@ -405,7 +406,7 @@ LISTA_MESTRA_NOMES = [
 ]
 
 # ==========================================
-# 2. SISTEMA DE MONITORAMENTO INTELIGENTE (BI)
+# 2. FUNÇÕES UTILITÁRIAS
 # ==========================================
 
 def padronizar_unidade(x):
@@ -415,27 +416,56 @@ def padronizar_unidade(x):
     val = x.upper().strip()
     if "ACS" in val and "NÃO DEFINIDA" in val:
         return "ACS - UNIDADE NÃO DEFINIDA"
-    # Corta a string na barra e pega apenas a primeira parte
     return val.split('/')[0].strip()
 
-# CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
+# ==========================================
+# CORREÇÃO 1: NORMALIZAÇÃO DE NOMES
+# Este é o coração da correção. O merge entre a lista mestra e a planilha
+# falhava silenciosamente porque os nomes precisam ser IDÊNTICOS caractere
+# a caractere. Esta função remove acentos, espaços duplos e pontuação,
+# garantindo que "ADRIANA CRISTINA DOS SANTOS " case com "ADRIANA CRISTINA DOS SANTOS".
+# ==========================================
+def normalizar_nome(nome):
+    """
+    Normaliza um nome para comparação robusta:
+    - Converte para maiúsculas
+    - Remove acentos (ex: Ç → C, Ã → A)
+    - Remove pontuação
+    - Colapsa espaços múltiplos
+    """
+    if not isinstance(nome, str):
+        return ""
+    # Maiúsculas e strip
+    nome = nome.upper().strip()
+    # Remove acentos via decomposição Unicode
+    nome = unicodedata.normalize('NFKD', nome)
+    nome = ''.join(c for c in nome if not unicodedata.combining(c))
+    # Remove pontuação (exceto espaços)
+    nome = re.sub(r'[^\w\s]', '', nome)
+    # Colapsa espaços múltiplos
+    nome = re.sub(r'\s+', ' ', nome).strip()
+    return nome
+
+def extrair_temas_inteligentes(textos):
+    """Identifica palavras-chave mais comuns em temas."""
+    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE', 'DOS', 'DAS', 'NO', 'NA', 'AO', 'AS', 'OS']
+    palavras = []
+    for t in textos:
+        if isinstance(t, str):
+            pals = re.findall(r'\w+', t.upper())
+            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
+    return Counter(palavras).most_common(10)
+
+# ==========================================
+# 3. CONFIGURAÇÃO E CARREGAMENTO
+# ==========================================
+
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
 
 @st.cache_data(ttl=60)
 def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
-
-def extrair_temas_inteligentes(textos):
-    """Função simples para identificar palavras-chave mais comuns em temas."""
-    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
-    palavras = []
-    for t in textos:
-        if isinstance(t, str):
-            # Limpa caracteres especiais e divide por palavras
-            pals = re.findall(r'\w+', t.upper())
-            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
-    return Counter(palavras).most_common(10)
 
 # Interface Principal
 st.title("Painel de Gestão | Educação Permanente")
@@ -451,44 +481,48 @@ if st.sidebar.button("Atualizar Dados"):
 try:
     with st.spinner('Sincronizando base de dados...'):
         df = carregar_dados(LINK_GOOGLE_SHEETS)
-    
+
     # Processamento
     df.columns = df.columns.str.strip().str.upper()
-    
-    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
+
     if 'LOTAÇÃO' in df.columns:
         df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
         df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
-        
+
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
 
-    # --- TRAVA DE SEGURANÇA PARA O NOME ---
-    # Garante que o sistema NUNCA confunda o nome da unidade com o nome do funcionário
+    # Detecção robusta da coluna de nome
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
     if not colunas_nome:
         colunas_nome = [c for c in df.columns if 'NOME' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
-        
+
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].astype(str).str.strip().str.upper()
-        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') 
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO')
     else:
         df['NOME COMPLETO'] = 'NÃO INFORMADO'
-    # --------------------------------------
+
+    # ==========================================
+    # CORREÇÃO 2: COLUNA DE NOME NORMALIZADO
+    # Criamos uma coluna auxiliar de nome normalizado na planilha para
+    # que o merge use essa coluna e não o nome original (que pode ter
+    # acentos ou espaços diferentes entre a lista mestra e o Forms).
+    # ==========================================
+    df['NOME_NORM'] = df['NOME COMPLETO'].apply(normalizar_nome)
 
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
     col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
 
-    # Trava de tema vazio
     if col_tema in df.columns:
         df[col_tema] = df[col_tema].fillna('NÃO INFORMADO')
 
-    df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
-                         pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
+    df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') -
+                          pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
     df['CH_CALCULADA'] = df['CH_CALCULADA'].fillna(0).apply(lambda x: max(0, x))
-    
+
     df['DATA_DT'] = pd.to_datetime(df[col_data], errors='coerce')
     df['MÊS'] = df['DATA_DT'].dt.strftime('%m - %b')
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
@@ -516,11 +550,10 @@ try:
         m1, m2, m3 = st.columns(3)
         m1.metric("Registros (Total)", len(df_f))
         m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
-        m3.metric("Média/Atividade", f"{(df_f['CH_CALCULADA'].mean()):.1f}h")
-        
+        m3.metric("Média/Atividade", f"{df_f['CH_CALCULADA'].mean():.1f}h")
+
         st.divider()
 
-        # Gráficos Principais
         c_g1, c_g2 = st.columns(2)
         with c_g1:
             st.subheader("Registros por Unidade")
@@ -531,16 +564,14 @@ try:
 
         st.divider()
 
-        # --- DESTAQUES E ANÁLISES POR CATEGORIA ---
         c_t1, c_t2 = st.columns([1, 1.5])
-        
+
         with c_t1:
             st.subheader("Destaques por Unidade")
             destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
             idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
             st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
-            
-            # Nova Tabela Adicionada: Atividades e CH por Categoria
+
             st.subheader("Atividades e CH por Categoria")
             resumo_cat = df_f.groupby('CATEGORIA PROFISSIONAL').agg(
                 Atividades=('CATEGORIA PROFISSIONAL', 'count'),
@@ -548,17 +579,16 @@ try:
             ).reset_index()
             resumo_cat['CH_Total'] = resumo_cat['CH_Total'].round(1).astype(str) + 'h'
             st.dataframe(resumo_cat, use_container_width=True, hide_index=True)
-        
+
         with c_t2:
-            # Nova Tabela Adicionada: Categoria e Tema da Atividade
             st.subheader("Relação: Categoria Profissional e Tema")
             relacao_tema = df_f[['CATEGORIA PROFISSIONAL', col_tema]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
             relacao_tema.columns = ['Categoria', 'Tema da Atividade']
             st.dataframe(relacao_tema, use_container_width=True, hide_index=True)
-            
+
             st.subheader("Carga Horária e Resumo de Temas por Categoria")
             resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
+                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...',
                 'CH_CALCULADA': 'sum'
             }).reset_index()
             resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
@@ -571,8 +601,8 @@ try:
         with st.expander("Autenticação Necessária"):
             senha = st.text_input("Senha de acesso", type="password", key="sec")
             if senha == "eps2026_esf":
-                
-                # 1. Deltas de Tendência
+
+                # 1. Tendência Mensal
                 st.subheader("Tendência Mensal")
                 periodos = sorted(df_f['PERIODO'].unique())
                 if len(periodos) >= 2:
@@ -581,8 +611,8 @@ try:
                     h_prev = df_f[df_f['PERIODO'] == prev]['CH_CALCULADA'].sum()
                     delta = ((h_curr - h_prev) / h_prev) * 100 if h_prev > 0 else 0
                     st.metric(f"Horas em {curr}", f"{h_curr:.1f}h", f"{delta:.1f}% vs {prev}")
-                
-                # 2. Gráfico de Evolução Interativo (Plotly)
+
+                # 2. Evolução Temporal
                 st.subheader("Evolução Temporal do Engajamento")
                 df_evol = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
                 fig_line = px.line(df_evol, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, template="plotly_white")
@@ -590,7 +620,7 @@ try:
 
                 st.divider()
 
-                # 3. Análise Inteligente de Temas e Radar
+                # 3. Temas e Radar
                 c_bi1, c_bi2 = st.columns(2)
                 with c_bi1:
                     st.subheader("Temas mais Abordados (Agrupados)")
@@ -598,7 +628,7 @@ try:
                     df_nuvem = pd.DataFrame(nuvem, columns=['Termo', 'Frequência'])
                     fig_tema = px.bar(df_nuvem, x='Frequência', y='Termo', orientation='h', color='Frequência', color_continuous_scale="Blues")
                     st.plotly_chart(fig_tema, use_container_width=True)
-                
+
                 with c_bi2:
                     st.subheader("Equilíbrio por Categoria (Radar)")
                     df_radar = df_f.groupby('CATEGORIA PROFISSIONAL')['CH_CALCULADA'].sum().reset_index()
@@ -607,49 +637,123 @@ try:
 
                 st.divider()
 
-                # 4. Monitoramento de Gestão e Metas (16h)
+                # ==========================================
+                # CORREÇÃO 3: BLOCO DE GESTÃO E METAS
+                # Agora o merge usa a coluna NOME_NORM (sem acentos, sem
+                # espaços extras) tanto na lista mestra quanto na planilha,
+                # garantindo que os nomes casem corretamente mesmo com
+                # pequenas diferenças de digitação/formatação.
+                # ==========================================
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
-                
-                # Prepara os dados de Gestão limpando as unidades na Lista Mestra
+
+                # Prepara lista mestra com nome normalizado
                 df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
                 df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
                 df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
-                
+                # CHAVE DA CORREÇÃO: cria coluna normalizada na lista mestra
+                df_mestra['NOME_NORM'] = df_mestra['NOME COMPLETO'].apply(normalizar_nome)
+
+                # Aplica filtro de unidade na lista mestra (se houver)
                 if f_unidade:
                     df_mestra = df_mestra[df_mestra['UNIDADE REGISTRADA'].isin(f_unidade)]
-                
-                horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
-                gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
-                
+
+                # Agrupa horas da planilha filtrada por nome normalizado
+                horas_prof = df_f.groupby('NOME_NORM')['CH_CALCULADA'].sum().reset_index()
+
+                # MERGE pela coluna normalizada — muito mais robusto
+                gestao = pd.merge(df_mestra, horas_prof, on='NOME_NORM', how='left')
+                gestao['CH_CALCULADA'] = gestao['CH_CALCULADA'].fillna(0)
+
+                # ---- Indicador de diagnóstico (útil para você monitorar) ----
+                total_mestra = len(df_mestra)
+                com_lancamento = (gestao['CH_CALCULADA'] > 0).sum()
+                sem_lancamento = (gestao['CH_CALCULADA'] == 0).sum()
+                pct_engajamento = (com_lancamento / total_mestra * 100) if total_mestra > 0 else 0
+
+                diag1, diag2, diag3 = st.columns(3)
+                diag1.metric("Colaboradores na seleção", total_mestra)
+                diag2.metric("Com lançamento no período", com_lancamento)
+                diag3.metric("Engajamento geral", f"{pct_engajamento:.0f}%")
+
+                st.divider()
+
                 c_gest1, c_gest2 = st.columns(2)
-                
+
                 with c_gest1:
-                    st.markdown("**Desempenho: Meta de 16h por Unidade Unificada**")
+                    # ==========================================
+                    # CORREÇÃO 4: META 16H — % REAL POR UNIDADE
+                    # Antes: mostrava Atingiram como número absoluto sem contexto.
+                    # Agora: exibe % de colaboradores que atingiram a meta,
+                    # ordenado da maior para menor % de sucesso.
+                    # ==========================================
+                    st.markdown("**Desempenho: Meta de 16h por Unidade**")
                     gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
                     resumo_meta = gestao.groupby('UNIDADE REGISTRADA').agg(
                         Profissionais=('NOME COMPLETO', 'count'),
                         Atingiram=('ATINGIU META', 'sum')
                     ).reset_index()
-                    resumo_meta['% Sucesso'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + "%"
-                    st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
-                    
-                    st.markdown("**Ranking Individual**")
-                    st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
-                    
-                    # Nova planilha com o ranking de CADA funcionário (os 379)
-                    st.markdown("**Ranking de Cada Funcionário (Todos)**")
-                    ranking_todos = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA']].copy()
-                    ranking_todos = ranking_todos.sort_values(by='CH_CALCULADA', ascending=False)
-                    ranking_todos.columns = ['Nome do Funcionário', 'Lotação', 'Carga Horária (CH)']
-                    st.dataframe(ranking_todos, hide_index=True)
+                    resumo_meta['% Atingiram Meta'] = (
+                        (resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100
+                    ).round(1)
+                    resumo_meta = resumo_meta.sort_values('% Atingiram Meta', ascending=False)
+                    resumo_meta['% Atingiram Meta'] = resumo_meta['% Atingiram Meta'].astype(str) + '%'
+                    st.dataframe(resumo_meta, hide_index=True, use_container_width=True)
+
+                    st.divider()
+
+                    # ==========================================
+                    # CORREÇÃO 5: RANKING INDIVIDUAL
+                    # Antes: usava df_f.groupby() — mostrava APENAS quem lançou,
+                    # sem os que não lançaram, e a lotação vinha da planilha (suja).
+                    # Agora: usa o dataframe 'gestao' que já tem TODOS os 379
+                    # colaboradores da lista mestra, com CH=0 para quem não lançou,
+                    # e a lotação vem da lista mestra (limpa e padronizada).
+                    # ==========================================
+                    st.markdown("**Ranking Individual (todos os colaboradores)**")
+                    ranking_individual = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA']].copy()
+                    ranking_individual = ranking_individual.sort_values('CH_CALCULADA', ascending=False)
+                    ranking_individual['Posição'] = range(1, len(ranking_individual) + 1)
+                    ranking_individual['CH_CALCULADA'] = ranking_individual['CH_CALCULADA'].round(1)
+                    ranking_individual.columns = ['Nome', 'Unidade', 'Horas (CH)', 'Posição']
+                    ranking_individual = ranking_individual[['Posição', 'Nome', 'Unidade', 'Horas (CH)']]
+                    st.dataframe(ranking_individual, hide_index=True, use_container_width=True)
 
                 with c_gest2:
-                    st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade Unificada)**")
-                    faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']]
-                    st.dataframe(faltantes.sort_values('UNIDADE REGISTRADA'), hide_index=True)
+                    # ==========================================
+                    # CORREÇÃO 6: BUSCA ATIVA — AUSÊNCIA DE LANÇAMENTOS
+                    # Permanece funcional, mas agora usa o gestao corrigido
+                    # (com merge por nome normalizado), o que evita que
+                    # colaboradores que lançaram apareçam erroneamente como ausentes.
+                    # ==========================================
+                    st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade)**")
+                    faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']].copy()
+                    faltantes = faltantes.sort_values('UNIDADE REGISTRADA')
+                    faltantes.columns = ['Nome', 'Unidade']
+                    st.dataframe(faltantes, hide_index=True, use_container_width=True)
+
+                    st.divider()
+
+                    # ==========================================
+                    # MELHORIA: NOMES SEM CORRESPONDÊNCIA NA LISTA MESTRA
+                    # Mostra colaboradores que lançaram atividades mas cujo nome
+                    # NÃO encontrou par na lista mestra (possível erro de cadastro
+                    # no formulário ou nome fora da lista).
+                    # ==========================================
+                    st.markdown("**⚠️ Lançamentos sem correspondência na Lista Mestra**")
+                    st.caption("Esses colaboradores lançaram atividades mas o nome não bateu com a lista. Verifique possíveis erros de digitação no formulário.")
+                    nomes_mestra_norm = set(df_mestra['NOME_NORM'].tolist())
+                    sem_correspondencia = df_f[~df_f['NOME_NORM'].isin(nomes_mestra_norm)][['NOME COMPLETO', 'LOTAÇÃO', 'CH_CALCULADA']].copy()
+                    sem_correspondencia = sem_correspondencia.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
+                    sem_correspondencia = sem_correspondencia.sort_values('CH_CALCULADA', ascending=False)
+                    sem_correspondencia.columns = ['Nome (como lançado)', 'Unidade (planilha)', 'Horas acumuladas']
+                    if sem_correspondencia.empty:
+                        st.success("Todos os lançamentos têm correspondência na lista mestra.")
+                    else:
+                        st.dataframe(sem_correspondencia, hide_index=True, use_container_width=True)
 
             elif senha:
                 st.error("Senha incorreta.")
 
 except Exception as e:
     st.error(f"Erro no processamento: {e}")
+    st.exception(e)

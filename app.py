@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from collections import Counter
+import re
 
 # Configuração da página
 st.set_page_config(page_title="Educação Permanente - ESF", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 1. LISTA MESTRA DE COLABORADORES E UNIDADES
+# 1. LISTA MESTRA DE COLABORADORES (379 NOMES)
 # ==========================================
 LISTA_MESTRA_NOMES = [
     ["ADRIANA CRISTINA DOS SANTOS", "USF JARDIM GODOY/APOIO"],
@@ -438,11 +440,23 @@ def carregar_dados(url):
     df = pd.read_excel(url, engine='openpyxl')
     return df
 
-# Estrutura Visual Principal
+def extrair_temas_inteligentes(textos):
+    """Função simples para identificar palavras-chave mais comuns em temas."""
+    stop_words = ['DA', 'DE', 'DO', 'E', 'O', 'A', 'PARA', 'COM', 'EM', 'UM', 'UMA', 'SOBRE']
+    palavras = []
+    for t in textos:
+        if isinstance(t, str):
+            # Limpa caracteres especiais e divide por palavras
+            pals = re.findall(r'\w+', t.upper())
+            palavras.extend([p for p in pals if p not in stop_words and len(p) > 3])
+    return Counter(palavras).most_common(10)
+
+# Interface Principal
 st.title("Painel de Gestão | Educação Permanente")
 st.caption("Acompanhamento de atividades educativas")
 st.divider()
 
+# Sidebar
 st.sidebar.header("Configurações")
 if st.sidebar.button("Atualizar Dados"):
     st.cache_data.clear()
@@ -452,32 +466,31 @@ try:
     with st.spinner('Sincronizando base de dados...'):
         df = carregar_dados(LINK_GOOGLE_SHEETS)
     
+    # Processamento
     df.columns = df.columns.str.strip().str.upper()
     
-    # --- INTEGRAÇÃO DA TRAVA DE UNIFICAÇÃO DA REDE ---
+    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
+    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
+    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
     if 'LOTAÇÃO' in df.columns:
-        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
-        df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
-        
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA')
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
+    # ----------------------------------------------------
 
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
     if colunas_nome:
         df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
-        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') 
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') # Trava para Nome
     
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
     col_data = 'DATA DA ATIVIDADE' if 'DATA DA ATIVIDADE' in df.columns else 'CARIMBO DE DATA/HORA'
-    
-    # --- AJUSTE: Identificando o Tipo de Atividade ---
-    col_tipo = next((c for c in df.columns if 'TIPO DE ATIVIDADE' in c), None)
-    if not col_tipo:
-        col_tipo = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
+    col_tema = 'DESCRIÇÃO BREVE DA ATIVIDADE' if 'DESCRIÇÃO BREVE DA ATIVIDADE' in df.columns else df.columns[-1]
 
-    if col_tipo in df.columns:
-        df[col_tipo] = df[col_tipo].fillna('NÃO INFORMADO')
+    # Trava de tema vazio
+    if col_tema in df.columns:
+        df[col_tema] = df[col_tema].fillna('NÃO INFORMADO')
 
     df['CH_CALCULADA'] = (pd.to_datetime(df[col_fim].astype(str), errors='coerce') - 
                          pd.to_datetime(df[col_inicio].astype(str), errors='coerce')).dt.total_seconds() / 3600
@@ -488,7 +501,7 @@ try:
     df['ANO'] = df['DATA_DT'].dt.year.astype(str)
     df['PERIODO'] = df['DATA_DT'].dt.strftime('%Y-%m')
 
-    # Filtros Estruturados
+    # Filtros
     st.sidebar.subheader("Filtros")
     f_ano = st.sidebar.multiselect("Ano", sorted(df['ANO'].dropna().unique()))
     f_mes = st.sidebar.multiselect("Mês", sorted(df['MÊS'].dropna().unique()))
@@ -506,7 +519,7 @@ try:
     if df_f.empty:
         st.info("Aguardando seleção de dados nos filtros.")
     else:
-        # --- VISÃO PÚBLICA CONSOLIDADA ---
+        # --- VISÃO PÚBLICA ---
         m1, m2, m3 = st.columns(3)
         m1.metric("Registros (Total)", len(df_f))
         m2.metric("Total Horas", f"{df_f['CH_CALCULADA'].sum():.1f}h")
@@ -514,6 +527,7 @@ try:
         
         st.divider()
 
+        # Gráficos Principais
         c_g1, c_g2 = st.columns(2)
         with c_g1:
             st.subheader("Registros por Unidade")
@@ -524,13 +538,16 @@ try:
 
         st.divider()
 
+        # --- DESTAQUES E ANÁLISES POR CATEGORIA ---
         c_t1, c_t2 = st.columns([1, 1.5])
+        
         with c_t1:
             st.subheader("Destaques por Unidade")
             destaque = df_f.groupby(['LOTAÇÃO', 'CATEGORIA PROFISSIONAL']).size().reset_index(name='Qtd')
             idx = destaque.groupby('LOTAÇÃO')['Qtd'].idxmax()
             st.dataframe(destaque.loc[idx], use_container_width=True, hide_index=True)
             
+            # Nova Tabela Adicionada: Atividades e CH por Categoria
             st.subheader("Atividades e CH por Categoria")
             resumo_cat = df_f.groupby('CATEGORIA PROFISSIONAL').agg(
                 Atividades=('CATEGORIA PROFISSIONAL', 'count'),
@@ -540,17 +557,18 @@ try:
             st.dataframe(resumo_cat, use_container_width=True, hide_index=True)
         
         with c_t2:
-            st.subheader("Relação: Categoria Profissional e Tipo de Atividade")
-            relacao_tipo = df_f[['CATEGORIA PROFISSIONAL', col_tipo]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
-            relacao_tipo.columns = ['Categoria', 'Tipo de Atividade']
-            st.dataframe(relacao_tipo, use_container_width=True, hide_index=True)
+            # Nova Tabela Adicionada: Categoria e Tema da Atividade
+            st.subheader("Relação: Categoria Profissional e Tema")
+            relacao_tema = df_f[['CATEGORIA PROFISSIONAL', col_tema]].drop_duplicates().sort_values(by='CATEGORIA PROFISSIONAL')
+            relacao_tema.columns = ['Categoria', 'Tema da Atividade']
+            st.dataframe(relacao_tema, use_container_width=True, hide_index=True)
             
-            st.subheader("Carga Horária e Resumo de Tipos por Categoria")
+            st.subheader("Carga Horária e Resumo de Temas por Categoria")
             resumo = df_f.groupby('CATEGORIA PROFISSIONAL').agg({
-                col_tipo: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
+                col_tema: lambda x: ' | '.join(x.dropna().astype(str).unique()[:3]) + '...', 
                 'CH_CALCULADA': 'sum'
             }).reset_index()
-            resumo.columns = ['Categoria', 'Tipos de Atividade', 'Total Horas']
+            resumo.columns = ['Categoria', 'Exemplos de Temas', 'Total Horas']
             st.dataframe(resumo, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -561,6 +579,7 @@ try:
             senha = st.text_input("Senha de acesso", type="password", key="sec")
             if senha == "eps2026_esf":
                 
+                # 1. Deltas de Tendência
                 st.subheader("Tendência Mensal")
                 periodos = sorted(df_f['PERIODO'].unique())
                 if len(periodos) >= 2:
@@ -570,6 +589,7 @@ try:
                     delta = ((h_curr - h_prev) / h_prev) * 100 if h_prev > 0 else 0
                     st.metric(f"Horas em {curr}", f"{h_curr:.1f}h", f"{delta:.1f}% vs {prev}")
                 
+                # 2. Gráfico de Evolução Interativo (Plotly)
                 st.subheader("Evolução Temporal do Engajamento")
                 df_evol = df_f.groupby(['PERIODO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
                 fig_line = px.line(df_evol, x='PERIODO', y='CH_CALCULADA', color='LOTAÇÃO', markers=True, template="plotly_white")
@@ -577,13 +597,14 @@ try:
 
                 st.divider()
 
+                # 3. Análise Inteligente de Temas e Radar
                 c_bi1, c_bi2 = st.columns(2)
                 with c_bi1:
-                    st.subheader("Tipos de Atividade mais Abordados")
-                    df_contagem_tipos = df_f[col_tipo].value_counts().reset_index()
-                    df_contagem_tipos.columns = ['Tipo de Atividade', 'Frequência']
-                    fig_tipo = px.bar(df_contagem_tipos.head(10), x='Frequência', y='Tipo de Atividade', orientation='h', color='Frequência', color_continuous_scale="Blues")
-                    st.plotly_chart(fig_tipo, use_container_width=True)
+                    st.subheader("Temas mais Abordados (Agrupados)")
+                    nuvem = extrair_temas_inteligentes(df_f[col_tema])
+                    df_nuvem = pd.DataFrame(nuvem, columns=['Termo', 'Frequência'])
+                    fig_tema = px.bar(df_nuvem, x='Frequência', y='Termo', orientation='h', color='Frequência', color_continuous_scale="Blues")
+                    st.plotly_chart(fig_tema, use_container_width=True)
                 
                 with c_bi2:
                     st.subheader("Equilíbrio por Categoria (Radar)")
@@ -593,6 +614,7 @@ try:
 
                 st.divider()
 
+                # 4. Monitoramento de Gestão e Metas (16h)
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
                 
                 # Prepara os dados de Gestão limpando as unidades na Lista Mestra também
@@ -600,12 +622,17 @@ try:
                 df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
                 df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
                 
-                # Aplica o filtro de unidade da barra lateral à Lista Mestra para a Busca Ativa
+                # Aplica o filtro de unidade da barra lateral à Lista Mestra para a Busca Ativa e a Meta
                 if f_unidade:
                     df_mestra = df_mestra[df_mestra['UNIDADE REGISTRADA'].isin(f_unidade)]
                 
+                # Conta horas e quantidade de atividades no filtro atual (Geral ou por Mês)
                 horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
+                qtd_prof = df_f.groupby('NOME COMPLETO').size().reset_index(name='Qtd_Atividades')
+                
+                # Junta tudo na Lista Mestra
                 gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
+                gestao = pd.merge(gestao, qtd_prof, on='NOME COMPLETO', how='left').fillna(0)
                 
                 c_gest1, c_gest2 = st.columns(2)
                 
@@ -619,8 +646,11 @@ try:
                     resumo_meta['% Sucesso'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + "%"
                     st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
                     
-                    st.markdown("**Ranking Individual**")
-                    st.dataframe(df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().sort_values(ascending=False).reset_index(), hide_index=True)
+                    st.markdown("**Ranking Individual Completo**")
+                    ranking_completo = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA', 'Qtd_Atividades']].copy()
+                    ranking_completo.columns = ['Nome do Profissional', 'Unidade', 'Carga Horária (h)', 'Atividades Lançadas']
+                    ranking_completo = ranking_completo.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
+                    st.dataframe(ranking_completo, hide_index=True)
 
                 with c_gest2:
                     st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade Unificada)**")

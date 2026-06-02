@@ -418,31 +418,14 @@ def padronizar_unidade(x):
         return "ACS - UNIDADE NÃO DEFINIDA"
     return val.split('/')[0].strip()
 
-# ==========================================
-# CORREÇÃO 1: NORMALIZAÇÃO DE NOMES
-# Este é o coração da correção. O merge entre a lista mestra e a planilha
-# falhava silenciosamente porque os nomes precisam ser IDÊNTICOS caractere
-# a caractere. Esta função remove acentos, espaços duplos e pontuação,
-# garantindo que "ADRIANA CRISTINA DOS SANTOS " case com "ADRIANA CRISTINA DOS SANTOS".
-# ==========================================
 def normalizar_nome(nome):
-    """
-    Normaliza um nome para comparação robusta:
-    - Converte para maiúsculas
-    - Remove acentos (ex: Ç → C, Ã → A)
-    - Remove pontuação
-    - Colapsa espaços múltiplos
-    """
+    """Normaliza um nome removendo acentos e espaços extras para que o cruzamento seja impecável."""
     if not isinstance(nome, str):
         return ""
-    # Maiúsculas e strip
     nome = nome.upper().strip()
-    # Remove acentos via decomposição Unicode
     nome = unicodedata.normalize('NFKD', nome)
     nome = ''.join(c for c in nome if not unicodedata.combining(c))
-    # Remove pontuação (exceto espaços)
     nome = re.sub(r'[^\w\s]', '', nome)
-    # Colapsa espaços múltiplos
     nome = re.sub(r'\s+', ' ', nome).strip()
     return nome
 
@@ -492,7 +475,7 @@ try:
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
 
-    # Detecção robusta da coluna de nome
+    # Detecção robusta da coluna de nome (Não permite usar coluna de Unidade por engano)
     colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
     if not colunas_nome:
         colunas_nome = [c for c in df.columns if 'NOME' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
@@ -503,12 +486,7 @@ try:
     else:
         df['NOME COMPLETO'] = 'NÃO INFORMADO'
 
-    # ==========================================
-    # CORREÇÃO 2: COLUNA DE NOME NORMALIZADO
-    # Criamos uma coluna auxiliar de nome normalizado na planilha para
-    # que o merge use essa coluna e não o nome original (que pode ter
-    # acentos ou espaços diferentes entre a lista mestra e o Forms).
-    # ==========================================
+    # Cria coluna com o nome perfeitamente limpo para cruzar dados sem erro
     df['NOME_NORM'] = df['NOME COMPLETO'].apply(normalizar_nome)
 
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
@@ -638,122 +616,57 @@ try:
                 st.divider()
 
                 # ==========================================
-                # CORREÇÃO 3: BLOCO DE GESTÃO E METAS
-                # Agora o merge usa a coluna NOME_NORM (sem acentos, sem
-                # espaços extras) tanto na lista mestra quanto na planilha,
-                # garantindo que os nomes casem corretamente mesmo com
-                # pequenas diferenças de digitação/formatação.
+                # BLOCO DE GESTÃO E METAS (SIMPLIFICADO E DIRETO)
                 # ==========================================
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
 
-                # Prepara lista mestra com nome normalizado
+                # 1. Preparar a Lista Mestra (Pessoas por Unidade)
                 df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
-                df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
-                df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
-                # CHAVE DA CORREÇÃO: cria coluna normalizada na lista mestra
                 df_mestra['NOME_NORM'] = df_mestra['NOME COMPLETO'].apply(normalizar_nome)
+                df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
 
-                # Aplica filtro de unidade na lista mestra (se houver)
                 if f_unidade:
                     df_mestra = df_mestra[df_mestra['UNIDADE REGISTRADA'].isin(f_unidade)]
 
-                # Agrupa horas da planilha filtrada por nome normalizado
+                # 2. Somar a carga horária por pessoa no período filtrado
                 horas_prof = df_f.groupby('NOME_NORM')['CH_CALCULADA'].sum().reset_index()
 
-                # MERGE pela coluna normalizada — muito mais robusto
+                # 3. Cruzar com a Lista Mestra para saber a unidade oficial
                 gestao = pd.merge(df_mestra, horas_prof, on='NOME_NORM', how='left')
                 gestao['CH_CALCULADA'] = gestao['CH_CALCULADA'].fillna(0)
 
-                # ---- Indicador de diagnóstico (útil para você monitorar) ----
-                total_mestra = len(df_mestra)
-                com_lancamento = (gestao['CH_CALCULADA'] > 0).sum()
-                sem_lancamento = (gestao['CH_CALCULADA'] == 0).sum()
-                pct_engajamento = (com_lancamento / total_mestra * 100) if total_mestra > 0 else 0
-
-                diag1, diag2, diag3 = st.columns(3)
-                diag1.metric("Colaboradores na seleção", total_mestra)
-                diag2.metric("Com lançamento no período", com_lancamento)
-                diag3.metric("Engajamento geral", f"{pct_engajamento:.0f}%")
-
-                st.divider()
+                # 4. Verificar quem atingiu a meta
+                gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
 
                 c_gest1, c_gest2 = st.columns(2)
 
                 with c_gest1:
-                    # ==========================================
-                    # CORREÇÃO 4: META 16H — % REAL POR UNIDADE
-                    # Antes: mostrava Atingiram como número absoluto sem contexto.
-                    # Agora: exibe % de colaboradores que atingiram a meta,
-                    # ordenado da maior para menor % de sucesso.
-                    # ==========================================
                     st.markdown("**Desempenho: Meta de 16h por Unidade**")
-                    gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
                     resumo_meta = gestao.groupby('UNIDADE REGISTRADA').agg(
                         Profissionais=('NOME COMPLETO', 'count'),
                         Atingiram=('ATINGIU META', 'sum')
                     ).reset_index()
-                    resumo_meta['% Atingiram Meta'] = (
-                        (resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100
-                    ).round(1)
-                    resumo_meta = resumo_meta.sort_values('% Atingiram Meta', ascending=False)
-                    resumo_meta['% Atingiram Meta'] = resumo_meta['% Atingiram Meta'].astype(str) + '%'
+                    resumo_meta['% Atingiram Meta'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + '%'
+                    resumo_meta = resumo_meta.sort_values('Atingiram', ascending=False)
                     st.dataframe(resumo_meta, hide_index=True, use_container_width=True)
 
-                    st.divider()
-
-                    # ==========================================
-                    # CORREÇÃO 5: RANKING INDIVIDUAL
-                    # Antes: usava df_f.groupby() — mostrava APENAS quem lançou,
-                    # sem os que não lançaram, e a lotação vinha da planilha (suja).
-                    # Agora: usa o dataframe 'gestao' que já tem TODOS os 379
-                    # colaboradores da lista mestra, com CH=0 para quem não lançou,
-                    # e a lotação vem da lista mestra (limpa e padronizada).
-                    # ==========================================
                     st.markdown("**Ranking Individual (todos os colaboradores)**")
                     ranking_individual = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA']].copy()
                     ranking_individual = ranking_individual.sort_values('CH_CALCULADA', ascending=False)
                     ranking_individual['Posição'] = range(1, len(ranking_individual) + 1)
-                    ranking_individual['CH_CALCULADA'] = ranking_individual['CH_CALCULADA'].round(1)
                     ranking_individual.columns = ['Nome', 'Unidade', 'Horas (CH)', 'Posição']
                     ranking_individual = ranking_individual[['Posição', 'Nome', 'Unidade', 'Horas (CH)']]
                     st.dataframe(ranking_individual, hide_index=True, use_container_width=True)
 
                 with c_gest2:
-                    # ==========================================
-                    # CORREÇÃO 6: BUSCA ATIVA — AUSÊNCIA DE LANÇAMENTOS
-                    # Permanece funcional, mas agora usa o gestao corrigido
-                    # (com merge por nome normalizado), o que evita que
-                    # colaboradores que lançaram apareçam erroneamente como ausentes.
-                    # ==========================================
                     st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade)**")
                     faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']].copy()
                     faltantes = faltantes.sort_values('UNIDADE REGISTRADA')
                     faltantes.columns = ['Nome', 'Unidade']
                     st.dataframe(faltantes, hide_index=True, use_container_width=True)
 
-                    st.divider()
-
-                    # ==========================================
-                    # MELHORIA: NOMES SEM CORRESPONDÊNCIA NA LISTA MESTRA
-                    # Mostra colaboradores que lançaram atividades mas cujo nome
-                    # NÃO encontrou par na lista mestra (possível erro de cadastro
-                    # no formulário ou nome fora da lista).
-                    # ==========================================
-                    st.markdown("**⚠️ Lançamentos sem correspondência na Lista Mestra**")
-                    st.caption("Esses colaboradores lançaram atividades mas o nome não bateu com a lista. Verifique possíveis erros de digitação no formulário.")
-                    nomes_mestra_norm = set(df_mestra['NOME_NORM'].tolist())
-                    sem_correspondencia = df_f[~df_f['NOME_NORM'].isin(nomes_mestra_norm)][['NOME COMPLETO', 'LOTAÇÃO', 'CH_CALCULADA']].copy()
-                    sem_correspondencia = sem_correspondencia.groupby(['NOME COMPLETO', 'LOTAÇÃO'])['CH_CALCULADA'].sum().reset_index()
-                    sem_correspondencia = sem_correspondencia.sort_values('CH_CALCULADA', ascending=False)
-                    sem_correspondencia.columns = ['Nome (como lançado)', 'Unidade (planilha)', 'Horas acumuladas']
-                    if sem_correspondencia.empty:
-                        st.success("Todos os lançamentos têm correspondência na lista mestra.")
-                    else:
-                        st.dataframe(sem_correspondencia, hide_index=True, use_container_width=True)
-
             elif senha:
                 st.error("Senha incorreta.")
 
 except Exception as e:
     st.error(f"Erro no processamento: {e}")
-    st.exception(e)

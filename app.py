@@ -456,6 +456,9 @@ try:
     df.columns = df.columns.str.strip().str.upper()
     
     # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
+    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
+    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
+    # Aplica o padrão "antes da barra" logo no início para uso no painel inteiro
     if 'LOTAÇÃO' in df.columns:
         df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
         df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
@@ -603,52 +606,43 @@ try:
                 # 4. Monitoramento de Gestão e Metas (16h)
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
                 
-                # Prepara os dados de Gestão limpando as unidades na Lista Mestra
+                # --- BASE PARA METAS E BUSCA ATIVA (Lista Mestra) ---
                 df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
                 df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
                 df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
                 
-                # Aplica o filtro de unidade à Lista Mestra
                 if f_unidade:
                     df_mestra = df_mestra[df_mestra['UNIDADE REGISTRADA'].isin(f_unidade)]
                 
-                # --- CORREÇÃO DE ESTABILIDADE DO RANKING E METAS ---
-                # Conta a Carga Horária e a Quantidade de Atividades no filtro atual (Geral ou por Mês) de forma segura
-                resumo_prof = df_f.groupby('NOME COMPLETO').agg(
-                    CH_CALCULADA=('CH_CALCULADA', 'sum'),
-                    Qtd_Atividades=('CH_CALCULADA', 'count')
-                ).reset_index()
-                
-                # Junta a base oficial com o resumo filtrado
-                gestao = pd.merge(df_mestra, resumo_prof, on='NOME COMPLETO', how='left')
-                gestao['CH_CALCULADA'] = gestao['CH_CALCULADA'].fillna(0.0)
-                gestao['Qtd_Atividades'] = gestao['Qtd_Atividades'].fillna(0).astype(int)
-                # ---------------------------------------------------
+                horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
+                gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
                 
                 c_gest1, c_gest2 = st.columns(2)
                 
                 with c_gest1:
                     st.markdown("**Desempenho: Meta de 16h por Unidade Unificada**")
                     gestao['ATINGIU META'] = gestao['CH_CALCULADA'] >= 16
-                    
                     resumo_meta = gestao.groupby('UNIDADE REGISTRADA').agg(
                         Profissionais=('NOME COMPLETO', 'count'),
                         Atingiram=('ATINGIU META', 'sum')
                     ).reset_index()
-                    
-                    # Cálculo seguro da porcentagem (evita erros caso o filtro zere a tabela)
                     resumo_meta['% Sucesso'] = resumo_meta.apply(
                         lambda r: f"{(r['Atingiram'] / r['Profissionais'] * 100):.1f}%" if r['Profissionais'] > 0 else "0.0%", axis=1
                     )
                     st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
                     
                     st.markdown("**Ranking Individual Completo**")
-                    ranking_completo = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA', 'Qtd_Atividades']].copy()
-                    ranking_completo.columns = ['Nome do Profissional', 'Unidade Oficial', 'Carga Horária (h)', 'Atividades Lançadas']
-                    
-                    # Ordenação decrescente: Quem mais trabalhou (CH) e mais lançou fica no topo
-                    ranking_completo = ranking_completo.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
-                    st.dataframe(ranking_completo, hide_index=True)
+                    # RANKING APENAS DE QUEM LANÇOU ATIVIDADE (DIRETO DO DF_F)
+                    if not df_f.empty:
+                        ranking_ind = df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO']).agg(
+                            Carga_Horaria=('CH_CALCULADA', 'sum'),
+                            Atividades_Lancadas=('CH_CALCULADA', 'count')
+                        ).reset_index()
+                        ranking_ind.columns = ['Nome do Profissional', 'Unidade', 'Carga Horária (h)', 'Atividades Lançadas']
+                        ranking_ind = ranking_ind.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
+                        st.dataframe(ranking_ind, hide_index=True)
+                    else:
+                        st.info("Nenhum lançamento no período filtrado.")
 
                 with c_gest2:
                     st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade Unificada)**")

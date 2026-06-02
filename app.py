@@ -409,13 +409,14 @@ LISTA_MESTRA_NOMES = [
 # ==========================================
 
 def padronizar_unidade(x):
-    """Mantém a Unidade e a Equipe exatas para o cálculo da coordenação."""
+    """Filtra e consolida as strings pelo nome antes da barra."""
     if not isinstance(x, str):
         return "NÃO INFORMADA"
     val = x.upper().strip()
     if "ACS" in val and "NÃO DEFINIDA" in val:
         return "ACS - UNIDADE NÃO DEFINIDA"
-    return val
+    # Corta a string na barra e pega apenas a primeira parte
+    return val.split('/')[0].strip()
 
 # CONFIGURAÇÃO DO LINK (GOOGLE SHEETS)
 LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1yGdTyQWTTYOTEpzJqzu3M5KG1dv9Y7uEc-NbPedPNGU/export?format=xlsx"
@@ -457,8 +458,11 @@ try:
     # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
     # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
     # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
+    # Aplica o padrão "antes da barra" logo no início para uso no painel inteiro
     if 'LOTAÇÃO' in df.columns:
-        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA')
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
+        df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
+        
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
     # ----------------------------------------------------
@@ -634,6 +638,8 @@ try:
                     st.markdown("**Ranking Individual Completo**")
                     ranking_completo = gestao[['NOME COMPLETO', 'UNIDADE REGISTRADA', 'CH_CALCULADA', 'Qtd_Atividades']].copy()
                     ranking_completo.columns = ['Nome do Profissional', 'Unidade Oficial', 'Carga Horária (h)', 'Atividades Lançadas']
+                    
+                    # Forçando explicitamente a ordenação decrescente (Maior CH e Maior Qtd Lançada no topo)
                     ranking_completo = ranking_completo.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
                     st.dataframe(ranking_completo, hide_index=True)
 

@@ -455,22 +455,26 @@ try:
     # Processamento
     df.columns = df.columns.str.strip().str.upper()
     
-    # --- PREENCHIMENTO DE NULOS (A Trava Matemática) ---
-    # Isso garante que se um profissional não preencheu a Unidade ou a Categoria, 
-    # ele não seja ignorado na hora de somar, fazendo os totais baterem perfeitamente.
-    # Aplica o padrão "antes da barra" logo no início para uso no painel inteiro
+    # --- PREENCHIMENTO DE NULOS E EXTRAÇÃO SEGURA DO NOME ---
     if 'LOTAÇÃO' in df.columns:
         df['LOTAÇÃO'] = df['LOTAÇÃO'].fillna('NÃO INFORMADA').astype(str)
         df['LOTAÇÃO'] = df['LOTAÇÃO'].apply(padronizar_unidade)
         
     if 'CATEGORIA PROFISSIONAL' in df.columns:
         df['CATEGORIA PROFISSIONAL'] = df['CATEGORIA PROFISSIONAL'].fillna('NÃO INFORMADA')
-    # ----------------------------------------------------
 
-    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c]
+    # Correção: O Python é proibido de pegar qualquer coluna de nome que seja de "UNIDADE" ou "LOTAÇÃO"
+    colunas_nome = [c for c in df.columns if 'NOME' in c and 'COMPLETO' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
+    if not colunas_nome:
+        # Tenta qualquer coluna que tenha NOME, desde que não seja de Unidade
+        colunas_nome = [c for c in df.columns if 'NOME' in c and 'UNIDADE' not in c and 'LOTAÇÃO' not in c]
+        
     if colunas_nome:
-        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].str.strip().str.upper()
-        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO') # Trava para Nome
+        df['NOME COMPLETO'] = df[colunas_nome].bfill(axis=1).iloc[:, 0].astype(str).str.strip().str.upper()
+        df['NOME COMPLETO'] = df['NOME COMPLETO'].fillna('NÃO INFORMADO')
+    else:
+        df['NOME COMPLETO'] = 'NÃO INFORMADO'
+    # --------------------------------------------------------
     
     col_inicio = 'HORÁRIO INICIAL' if 'HORÁRIO INICIAL' in df.columns else 'HORARIO INICIAL'
     col_fim = 'HORÁRIO FINAL' if 'HORÁRIO FINAL' in df.columns else 'HORARIO FINAL'
@@ -606,16 +610,22 @@ try:
                 # 4. Monitoramento de Gestão e Metas (16h)
                 st.subheader("Monitoramento de Gestão e Metas (16h)")
                 
-                # --- BASE PARA METAS E BUSCA ATIVA (Lista Mestra) ---
+                # Prepara os dados de Gestão limpando as unidades na Lista Mestra também
                 df_mestra = pd.DataFrame(LISTA_MESTRA_NOMES, columns=['NOME COMPLETO', 'UNIDADE REGISTRADA'])
                 df_mestra['NOME COMPLETO'] = df_mestra['NOME COMPLETO'].str.strip().str.upper()
                 df_mestra['UNIDADE REGISTRADA'] = df_mestra['UNIDADE REGISTRADA'].apply(padronizar_unidade)
                 
+                # Aplica o filtro de unidade da barra lateral à Lista Mestra para a Busca Ativa e a Meta
                 if f_unidade:
                     df_mestra = df_mestra[df_mestra['UNIDADE REGISTRADA'].isin(f_unidade)]
                 
+                # Conta horas e quantidade de atividades no filtro atual
                 horas_prof = df_f.groupby('NOME COMPLETO')['CH_CALCULADA'].sum().reset_index()
+                qtd_prof = df_f.groupby('NOME COMPLETO').size().reset_index(name='Qtd_Atividades')
+                
+                # Junta tudo na Lista Mestra (Isso serve para a Busca Ativa e Meta)
                 gestao = pd.merge(df_mestra, horas_prof, on='NOME COMPLETO', how='left').fillna(0)
+                gestao = pd.merge(gestao, qtd_prof, on='NOME COMPLETO', how='left').fillna(0)
                 
                 c_gest1, c_gest2 = st.columns(2)
                 
@@ -626,26 +636,26 @@ try:
                         Profissionais=('NOME COMPLETO', 'count'),
                         Atingiram=('ATINGIU META', 'sum')
                     ).reset_index()
-                    resumo_meta['% Sucesso'] = resumo_meta.apply(
-                        lambda r: f"{(r['Atingiram'] / r['Profissionais'] * 100):.1f}%" if r['Profissionais'] > 0 else "0.0%", axis=1
-                    )
+                    resumo_meta['% Sucesso'] = ((resumo_meta['Atingiram'] / resumo_meta['Profissionais']) * 100).round(1).astype(str) + "%"
                     st.dataframe(resumo_meta.sort_values('Atingiram', ascending=False), hide_index=True)
                     
                     st.markdown("**Ranking Individual Completo**")
-                    # RANKING APENAS DE QUEM LANÇOU ATIVIDADE (DIRETO DO DF_F)
+                    # GERA O RANKING DIRETO DO DF_F PARA IGNORAR QUEM NÃO LANÇOU NADA E MOSTRAR QUEM TRABALHOU NO MÊS
                     if not df_f.empty:
-                        ranking_ind = df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO']).agg(
+                        ranking_ind = df_f.groupby(['NOME COMPLETO', 'LOTAÇÃO'], as_index=False).agg(
                             Carga_Horaria=('CH_CALCULADA', 'sum'),
                             Atividades_Lancadas=('CH_CALCULADA', 'count')
-                        ).reset_index()
-                        ranking_ind.columns = ['Nome do Profissional', 'Unidade', 'Carga Horária (h)', 'Atividades Lançadas']
+                        )
+                        ranking_ind.columns = ['Nome do Profissional', 'Unidade Registrada no Lançamento', 'Carga Horária (h)', 'Atividades Lançadas']
+                        # Garante a ordem decrescente de horas e atividades
                         ranking_ind = ranking_ind.sort_values(by=['Carga Horária (h)', 'Atividades Lançadas'], ascending=[False, False])
                         st.dataframe(ranking_ind, hide_index=True)
                     else:
-                        st.info("Nenhum lançamento no período filtrado.")
+                        st.info("Nenhum lançamento no período selecionado.")
 
                 with c_gest2:
                     st.markdown("**Busca Ativa: Ausência de Lançamentos (Por Unidade Unificada)**")
+                    # A Busca Ativa mostra exclusivamente quem está zerado
                     faltantes = gestao[gestao['CH_CALCULADA'] == 0][['NOME COMPLETO', 'UNIDADE REGISTRADA']]
                     st.dataframe(faltantes.sort_values('UNIDADE REGISTRADA'), hide_index=True)
 
